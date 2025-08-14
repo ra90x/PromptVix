@@ -1,4 +1,5 @@
-# Telco Customer Churn Visualizer
+# PromptVix - UniversityOfLiverpool-DissertationProject
+# Prepared by Ramz Aftab
 
 This app allows you to:
 - Automatically download the Telco Customer Churn dataset from Kaggle
