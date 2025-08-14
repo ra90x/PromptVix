@@ -12,7 +12,7 @@ if not OPENAI_API_KEY:
         "Please create a .env file with your OpenAI API key. "
         "See env_template.txt for the required format."
     )
-OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4-turbo')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-5')
 
 # Dataset Configuration
 DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', "cleaned_file.csv")
