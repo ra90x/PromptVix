@@ -15,7 +15,7 @@ if not OPENAI_API_KEY:
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4-turbo')
 
 # Dataset Configuration
-DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', r"C:\dataset.csv")
+DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', "cleaned_file.csv")
 
 # Database Configuration
 DB_NAME = os.getenv('DB_NAME', 'prompt_feedback.db')

@@ -14,14 +14,16 @@ from openai import OpenAI, OpenAIError, AuthenticationError, RateLimitError, Bad
 from config import OPENAI_API_KEY, OPENAI_MODEL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE, DB_NAME
 import plotly.graph_objects as go
 
+# Configure matplotlib for Streamlit compatibility
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for Streamlit
 
 def handle_prompt_tab():
     # Set up the Streamlit app title and subtitle
     st.title("📈 PromptVix")
     st.subheader("IT Artefact | Developed by Ramz A.", divider=True)
 
-    # Suppress deprecation warning for pyplot
-    st.set_option('deprecation.showPyplotGlobalUse', False)
+    # Streamlit app configuration
 
     @st.cache_data(show_spinner=True)
     def load_data():
