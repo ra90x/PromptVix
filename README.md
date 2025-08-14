@@ -23,4 +23,4 @@ This app allows you to:
    - Enter your visualization request (e.g., "Create a pie chart showing the distribution of payment methods").
    - Click "Generate Visualization" to see the code and plot.
 
-**Note:** The OpenAI API key is set in the code. For production, use environment variables for security. 
+**Note:** The OpenAI API key is set in the code. For production, use environment variables for security.
