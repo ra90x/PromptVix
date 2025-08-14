@@ -1,0 +1,20 @@
+import os
+import pandas as pd
+import streamlit as st
+
+@st.cache_data(show_spinner=True)
+def load_default_dataset():
+    default_path = r"C:\dataset.csv"
+    if not os.path.exists(default_path):
+        st.error(f"Default dataset not found at {default_path}")
+        return None
+    try:
+        return pd.read_csv(default_path)
+    except Exception as e:
+        st.error(f"Error loading dataset: {e}")
+        return None
+
+def is_code_safe(code: str) -> bool:
+    """Checks if generated code contains unsafe patterns."""
+    blacklist = ["os.", "sys.", "subprocess", "shutil", "open(", "eval(", "exec("]
+    return not any(term in code for term in blacklist)
