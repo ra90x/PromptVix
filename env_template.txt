@@ -3,7 +3,7 @@
 
 # OpenRouter API Configuration
 OPENROUTER_API_KEY=your_openrouter_api_key_here
-OPENROUTER_MODEL=deepseek/deepseek-coder
+OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct
 
 # Other environment variables
 # DATABASE_URL=your_database_url_here

@@ -12,7 +12,7 @@ if not OPENROUTER_API_KEY:
         "Please create a .env file with your OpenRouter API key. "
         "See env_template.txt for the required format."
     )
-OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'deepseek/deepseek-coder')
+OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'meta-llama/llama-3.1-8b-instruct')
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Dataset Configuration
