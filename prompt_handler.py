@@ -112,10 +112,12 @@ Show the plot using matplotlib, seaborn, or plotly - whichever is most appropria
                 try:
                     with st.spinner("Generating code with DeepSeek via OpenRouter..."):
                         # OpenRouter API call
-                        url = f"{OPENROUTER_BASE_URL}/chat/completions"
+                        url = "https://openrouter.ai/api/v1/chat/completions"
                         headers = {
                             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": "https://github.com/ra90x/PromptVix",
+                            "X-Title": "PromptVix"
                         }
                         payload = {
                             "model": OPENROUTER_MODEL,
@@ -127,10 +129,27 @@ Show the plot using matplotlib, seaborn, or plotly - whichever is most appropria
                             "temperature": TEMPERATURE
                         }
                         
+                        # Debug: Log the request details
+                        st.write(f"Debug: Making request to {url}")
+                        st.write(f"Debug: Model: {OPENROUTER_MODEL}")
+                        
                         response = requests.post(url, headers=headers, json=payload)
-                        response.raise_for_status()  # Raise exception for bad status codes
+                        
+                        # Debug: Log response details
+                        st.write(f"Debug: Response status: {response.status_code}")
+                        st.write(f"Debug: Response headers: {dict(response.headers)}")
+                        
+                        if response.status_code != 200:
+                            st.error(f"API Error: {response.status_code} - {response.text}")
+                            return
                         
                         response_data = response.json()
+                        st.write(f"Debug: Response data: {response_data}")
+                        
+                        if 'choices' not in response_data or not response_data['choices']:
+                            st.error("No choices returned from API")
+                            return
+                            
                         code = response_data['choices'][0]['message']['content']
                         
                         # Remove the opening and closing triple backticks and optional 'python' specifier
