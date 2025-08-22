@@ -10,8 +10,7 @@ from feedback_db import save_feedback
 from utils import load_default_dataset, is_code_safe
 import sqlite3
 from prompt_scenarios import business_problems
-from openai import OpenAI, OpenAIError, AuthenticationError, RateLimitError, BadRequestError
-from config import OPENAI_API_KEY, OPENAI_MODEL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE, DB_NAME
+from config import OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_BASE_URL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE, DB_NAME
 import plotly.graph_objects as go
 
 # Configure matplotlib for Streamlit compatibility
@@ -111,23 +110,34 @@ Request: {prompt_to_use}
 Show the plot using matplotlib, seaborn, or plotly - whichever is most appropriate. Use plt.show() or fig.show(). Only use appropriate libraries and pandas. Return only the code, nothing else.
 """
                 try:
-                    with st.spinner("Generating code with OpenAI..."):
-                        client = OpenAI(api_key=OPENAI_API_KEY)
-                        response = client.chat.completions.create(
-                            model=OPENAI_MODEL,
-                            messages=[
+                    with st.spinner("Generating code with DeepSeek via OpenRouter..."):
+                        # OpenRouter API call
+                        url = f"{OPENROUTER_BASE_URL}/chat/completions"
+                        headers = {
+                            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                            "Content-Type": "application/json"
+                        }
+                        payload = {
+                            "model": OPENROUTER_MODEL,
+                            "messages": [
                                 {"role": "system", "content": "You are a Python data visualization expert. Given a pandas DataFrame named 'df', write Python code to generate the requested visualization. Show the plot using matplotlib, seaborn, or plotly - whichever is most appropriate. Use plt.show() or fig.show(). Only use appropriate libraries and pandas. Return only the code, nothing else."},
                                 {"role": "user", "content": prompt}
                             ],
-                            max_tokens=700,
-                            temperature=TEMPERATURE
-                        )
-                        code = response.choices[0].message.content
+                            "max_tokens": MAX_TOKENS,
+                            "temperature": TEMPERATURE
+                        }
+                        
+                        response = requests.post(url, headers=headers, json=payload)
+                        response.raise_for_status()  # Raise exception for bad status codes
+                        
+                        response_data = response.json()
+                        code = response_data['choices'][0]['message']['content']
+                        
                         # Remove the opening and closing triple backticks and optional 'python' specifier
                         code = re.sub(r"^```(?:python)?\s*", "", code.strip(), flags=re.IGNORECASE)
                         code = re.sub(r"\s*```$", "", code, flags=re.IGNORECASE)
                         if not code:
-                            st.error("No code was returned by OpenAI.")
+                            st.error("No code was returned by DeepSeek.")
                         else:
                             st.session_state['generated_code'] = code  # Store the generated code in session state
                             st.subheader("Generated Python code:")
@@ -163,7 +173,7 @@ Show the plot using matplotlib, seaborn, or plotly - whichever is most appropria
                                     st.error(vis_error)
                                     plt.close('all')  # Clean up in case of error
                 except Exception as e:
-                    vis_error = f"Unexpected error with OpenAI API: {e}"
+                    vis_error = f"Unexpected error with OpenRouter API: {e}"
                     st.error(vis_error)
 
         # Recreate the visualization if code exists in session state

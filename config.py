@@ -4,15 +4,16 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
+# OpenRouter Configuration
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+if not OPENROUTER_API_KEY:
     raise ValueError(
-        "OPENAI_API_KEY environment variable is not set. "
-        "Please create a .env file with your OpenAI API key. "
+        "OPENROUTER_API_KEY environment variable is not set. "
+        "Please create a .env file with your OpenRouter API key. "
         "See env_template.txt for the required format."
     )
-OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-4-turbo')
+OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'deepseek/deepseek-v3.1-base')
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Dataset Configuration
 DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', "cleaned_file.csv")
