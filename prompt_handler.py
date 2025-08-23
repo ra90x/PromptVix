@@ -268,27 +268,31 @@ Requirements:
                         
                         plt.close('all')
                         
-                        # Feedback button that opens modal
-                        st.subheader("⭐ Rate This Visualization:")
-                        
-                        # Show feedback count for this model
-                        feedback_count_key = f"feedback_count_{model_name}"
-                        if feedback_count_key not in st.session_state:
-                            st.session_state[feedback_count_key] = 0
-                        
-                        if st.session_state[feedback_count_key] > 0:
-                            st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
-                        
-                        # Button to open feedback modal
-                        if st.button(f"📝 Submit Feedback for {model_name}", key=f"feedback_btn_{model_name}"):
-                            st.session_state['feedback_modal_open'] = True
-                            st.session_state['selected_model_for_feedback'] = model_name
-                            st.rerun()
-                        
                     except Exception as e:
                         st.error(f"Error executing code from {model_name}: {e}")
                         plt.close('all')
-                else:
+                
+                # Always show feedback section regardless of success/error
+                st.subheader("⭐ Rate This Visualization:")
+                
+                # Show feedback count for this model
+                feedback_count_key = f"feedback_count_{model_name}"
+                if feedback_count_key not in st.session_state:
+                    st.session_state[feedback_count_key] = 0
+                
+                if st.session_state[feedback_count_key] > 0:
+                    st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
+                
+                # Button to open feedback modal
+                if st.button(f"📝 Submit Feedback for {model_name}", key=f"feedback_btn_{model_name}"):
+                    st.session_state['feedback_modal_open'] = True
+                    st.session_state['selected_model_for_feedback'] = model_name
+                    # Add anchor for auto-scrolling
+                    st.markdown(f'<div id="feedback-form-{model_name}"></div>', unsafe_allow_html=True)
+                    st.rerun()
+                
+                # Show error message if the model failed
+                if not result['success']:
                     st.error(f"❌ {result['code']}")
                     st.info("This model encountered an error. Please try again or check your API configuration.")
 
@@ -297,6 +301,17 @@ Requirements:
             selected_model = st.session_state.get('selected_model_for_feedback', '')
             if selected_model and selected_model in st.session_state['all_results']:
                 result = st.session_state['all_results'][selected_model]
+                
+                # Add auto-scroll JavaScript
+                st.markdown("""
+                <script>
+                // Auto-scroll to feedback form when it opens
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+                </script>
+                """, unsafe_allow_html=True)
                 
                 # Create a modal-like experience
                 st.markdown("---")
