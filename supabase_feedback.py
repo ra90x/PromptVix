@@ -3,6 +3,7 @@ from supabase import create_client, Client
 from datetime import datetime, timezone
 import uuid
 
+
 def get_supabase_client() -> Client:
     """Initialize and return Supabase client."""
     url = os.getenv('SUPABASE_URL', 'https://nafxymsdbtdxkjknorvl.supabase.co')
@@ -16,13 +17,16 @@ def get_supabase_client() -> Client:
     
     return create_client(url, key)
 
+
 def get_formatted_timestamp() -> str:
     """
-    Returns current timestamp in UTC with the format '2025-08-23 08:29:30+00'
-    This matches the exact format you specified for the created_at field.
+    Return current timestamp in UTC with the format '2025-08-23 08:29:30+00'.
+    
+    This matches the exact format specified for the created_at field.
     """
     now_utc = datetime.now(timezone.utc)
     return now_utc.strftime('%Y-%m-%d %H:%M:%S+00')
+
 
 def save_feedback_to_supabase(
     model_name: str,
@@ -72,7 +76,7 @@ def save_feedback_to_supabase(
             "comment": comment,
             "code": code,
             "session_id": session_id,
-            "created_at": created_at  # Add the formatted timestamp
+            "created_at": created_at
         }
         
         print(f"Debug: Feedback data prepared: {feedback_data}")
@@ -101,6 +105,7 @@ def save_feedback_to_supabase(
             "error": str(e)
         }
 
+
 def get_feedback_count() -> int:
     """Get total count of feedback entries from Supabase."""
     try:
@@ -110,6 +115,7 @@ def get_feedback_count() -> int:
     except Exception as e:
         print(f"Error getting feedback count: {e}")
         return 0
+
 
 def get_feedback_analysis():
     """Get feedback analysis data from Supabase."""
@@ -128,13 +134,17 @@ def get_feedback_analysis():
         print(f"Error getting feedback analysis: {e}")
         return []
 
-# Test function to verify timestamp formatting
+
 def test_timestamp_format():
-    """Test function to verify the timestamp format is correct"""
+    """Test function to verify the timestamp format is correct."""
     timestamp = get_formatted_timestamp()
     print(f"Generated timestamp: {timestamp}")
-    print(f"Format matches '2025-08-23 08:29:30+00': {len(timestamp) == 22 and '+00' in timestamp}")
+    expected_length = 22
+    has_timezone = '+00' in timestamp
+    print(f"Format matches '2025-08-23 08:29:30+00': "
+          f"{len(timestamp) == expected_length and has_timezone}")
     return timestamp
+
 
 if __name__ == "__main__":
     # Test the timestamp formatting when running the file directly
