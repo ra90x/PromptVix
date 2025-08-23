@@ -67,24 +67,12 @@ def handle_prompt_tab():
             st.error(f"Failed to read CSV file: {e}")
             return None
 
-    # Allow dataset upload or use default
-    df = None
-    st.subheader("Upload Dataset (optional)")
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    if uploaded_file:
-        try:
-            df = pd.read_csv(uploaded_file)
-        except Exception as e:
-            st.error(f"Failed to read uploaded CSV: {e}")
-            df = None
-    else:
-        df = load_data()
-
-    if st.button("Reload Dataset"):
-        st.cache_data.clear()
-        df = load_data()
+    # Use only the default dataset (no upload/reload functionality)
+    df = load_data()
 
     if df is not None:
+        st.subheader("Dataset Information:")
+        st.info(f"📊 Using provided dataset: **{DEFAULT_DATASET_PATH}**")
         st.subheader("Data Preview:")
         st.dataframe(df.head(10))
 
