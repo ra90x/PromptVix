@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from datetime import datetime
-from feedback_db import save_feedback
+# from feedback_db import save_feedback
 from utils import load_default_dataset, is_code_safe
-import sqlite3
+
 from prompt_scenarios import business_problems
-from config import OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_BASE_URL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE, DB_NAME
+from config import OPENROUTER_API_KEY, AVAILABLE_MODELS, OPENROUTER_BASE_URL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE
+from supabase_feedback import save_feedback_to_supabase, get_feedback_count
 import plotly.graph_objects as go
 
 # Configure matplotlib for Streamlit compatibility
@@ -21,8 +22,36 @@ def handle_prompt_tab():
     # Set up the Streamlit app title and subtitle
     st.title("📈 PromptVix")
     st.subheader("IT Artefact | Developed by Ramz A.", divider=True)
+    
+    # Check Supabase database status
+    try:
+        feedback_count = get_feedback_count()
+        st.sidebar.success(f"📊 Supabase: {feedback_count} feedback entries")
+        
+        # Show session feedback summary
+        session_feedback_count = 0
+        for model_name in AVAILABLE_MODELS.keys():
+            feedback_count_key = f"feedback_count_{model_name}"
+            session_feedback_count += st.session_state.get(feedback_count_key, 0)
+        
+        if session_feedback_count > 0:
+            st.sidebar.info(f"📝 Session: {session_feedback_count} feedback entries submitted")
+            
+    except Exception as e:
+        st.sidebar.error(f"❌ Supabase Error: {e}")
+        print(f"Supabase connection error: {e}")
 
-    # Streamlit app configuration
+    # Initialize session state for storing results persistently
+    if 'all_results' not in st.session_state:
+        st.session_state['all_results'] = {}
+    if 'current_prompt' not in st.session_state:
+        st.session_state['current_prompt'] = ""
+    if 'selected_problem' not in st.session_state:
+        st.session_state['selected_problem'] = ""
+    if 'feedback_modal_open' not in st.session_state:
+        st.session_state['feedback_modal_open'] = False
+    if 'selected_model_for_feedback' not in st.session_state:
+        st.session_state['selected_model_for_feedback'] = ""
 
     @st.cache_data(show_spinner=True)
     def load_data():
@@ -67,6 +96,9 @@ def handle_prompt_tab():
             list(business_problems.keys()),
             key="business_problem_select"
         )
+        # Store selected problem in session state
+        st.session_state['selected_problem'] = selected_problem
+        
         # Display details of the selected business problem
         details = business_problems[selected_problem]
         st.info(f"**Visualization Type:** {details['Visualization Type']}\n**Complexity:** {details['Complexity']}")
@@ -85,163 +117,275 @@ def handle_prompt_tab():
         else:
             prompt_to_use = selected_problem + " using " + details['Visualization Type']
 
-        # Use session_state to persist generated_code
-        if 'generated_code' not in st.session_state:
-            st.session_state['generated_code'] = None
-        vis_error = None
-
-        if st.button("Generate Visualization") and prompt_to_use:
+        # Generate Visualizations from All LLM Models
+        st.subheader("◆ Generate Visualizations from All LLM Models")
+        st.info("Click the button below to generate visualizations using all available AI models simultaneously.")
+        
+        # Clear results button
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            generate_clicked = st.button("🚀 Generate All Visualizations")
+        with col2:
+            if st.button("🗑️ Clear Results"):
+                st.session_state['all_results'] = {}
+                st.session_state['current_prompt'] = ""
+                st.rerun()
+        
+        if generate_clicked and prompt_to_use:
             if not prompt_to_use.strip():
                 st.error("Please enter a valid visualization request.")
             else:
-                # Prepare the prompt for OpenAI
+                # Store the current prompt
+                st.session_state['current_prompt'] = prompt_to_use
+                
+                # Prepare the prompt for LLM
                 columns_str = ", ".join(df.columns)
                 df_head_str = df.head().to_string(index=False)
-                prompt = f"""
-You are a Python data visualization expert. The DataFrame 'df' has columns: {columns_str}.
+                prompt = f"""Create a Python visualization for this request: {prompt_to_use}
 
+DataFrame 'df' has columns: {columns_str}
 Sample data:
 {df_head_str}
 
-Write Python code to generate the requested visualization.
-
-Request: {prompt_to_use}
-
-Show the plot using matplotlib, seaborn, or plotly - whichever is most appropriate. Use plt.show() or fig.show(). Only use appropriate libraries and pandas. Return only the code, nothing else.
-"""
-                try:
-                    with st.spinner("Generating code with DeepSeek via OpenRouter..."):
-                        # OpenRouter API call
-                        url = "https://openrouter.ai/api/v1/chat/completions"
-                        headers = {
-                            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                            "Content-Type": "application/json",
-                            "HTTP-Referer": "https://github.com/ra90x/PromptVix",
-                            "X-Title": "PromptVix"
-                        }
-                        payload = {
-                            "model": OPENROUTER_MODEL,
-                            "messages": [
-                                {"role": "system", "content": "You are a Python data visualization expert. Given a pandas DataFrame named 'df', write Python code to generate the requested visualization. Show the plot using matplotlib, seaborn, or plotly - whichever is most appropriate. Use plt.show() or fig.show(). Only use appropriate libraries and pandas. Return only the code, nothing else."},
-                                {"role": "user", "content": prompt}
-                            ],
-                            "max_tokens": MAX_TOKENS,
-                            "temperature": TEMPERATURE
-                        }
-                        
-                        # Debug: Log the request details
-                        st.write(f"Debug: Making request to {url}")
-                        st.write(f"Debug: Model: {OPENROUTER_MODEL}")
-                        
-                        response = requests.post(url, headers=headers, json=payload)
-                        
-                        # Debug: Log response details
-                        st.write(f"Debug: Response status: {response.status_code}")
-                        st.write(f"Debug: Response headers: {dict(response.headers)}")
-                        
-                        if response.status_code != 200:
-                            st.error(f"API Error: {response.status_code} - {response.text}")
-                            return
-                        
-                        response_data = response.json()
-                        st.write(f"Debug: Response data: {response_data}")
-                        
-                        if 'choices' not in response_data or not response_data['choices']:
-                            st.error("No choices returned from API")
-                            return
+Requirements:
+- Use matplotlib, seaborn, or plotly
+- Include plt.show() or fig.show()
+- Return only Python code
+- Use pandas for data manipulation"""
+                
+                # Store results for all models
+                all_results = {}
+                
+                # Show which models will be processed
+                st.info(f"🔄 **Processing Models:** {', '.join(AVAILABLE_MODELS.keys())}")
+                
+                # Generate from all models simultaneously
+                with st.spinner("Generating visualizations from all AI models..."):
+                    for model_name, model_id in AVAILABLE_MODELS.items():
+                        try:
+                            st.write(f"🔄 Generating with {model_name}...")
                             
-                        code = response_data['choices'][0]['message']['content']
-                        
-                        # Remove the opening and closing triple backticks and optional 'python' specifier
-                        code = re.sub(r"^```(?:python)?\s*", "", code.strip(), flags=re.IGNORECASE)
-                        code = re.sub(r"\s*```$", "", code, flags=re.IGNORECASE)
-                        if not code:
-                            st.error("No code was returned by DeepSeek.")
-                        else:
-                            st.session_state['generated_code'] = code  # Store the generated code in session state
-                            st.subheader("Generated Python code:")
-                            st.code(code, language="python")
-                            # Execute the generated code safely
-                            if "plt.show()" not in code and "fig.show()" not in code:
-                                vis_error = "Generated code does not contain plt.show() or fig.show()."
-                                st.error(vis_error)
-                            else:
-                                try:
-                                    # Create a new figure before executing the code
-                                    plt.figure()
+                            # OpenRouter API call
+                            url = "https://openrouter.ai/api/v1/chat/completions"
+                            headers = {
+                                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                                "Content-Type": "application/json",
+                                "HTTP-Referer": "https://github.com/ra90x/PromptVix",
+                                "X-Title": "PromptVix"
+                            }
+                            payload = {
+                                "model": model_id,
+                                "messages": [
+                                    {"role": "system", "content": "You are a Python code generator. Return only executable Python code, no explanations."},
+                                    {"role": "user", "content": prompt}
+                                ],
+                                "max_tokens": MAX_TOKENS,
+                                "temperature": TEMPERATURE
+                            }
+                            
+                            response = requests.post(url, headers=headers, json=payload)
+                            
+                            if response.status_code == 200:
+                                response_data = response.json()
+                                if 'choices' in response_data and response_data['choices']:
+                                    code = response_data['choices'][0]['message']['content']
+                                    # Clean the code
+                                    code = re.sub(r"^```(?:python)?\s*", "", code.strip(), flags=re.IGNORECASE)
+                                    code = re.sub(r"\s*```$", "", code, flags=re.IGNORECASE)
                                     
-                                    # Remove both plt.show() and fig.show() from the code
-                                    code = code.replace("plt.show()", "")
-                                    code = code.replace("fig.show()", "")
-                                    
-                                    # Create the global namespace with required modules
-                                    global_vars = {
-                                        'plt': plt,
-                                        'pd': pd,
-                                        'df': df,
-                                        'go': go
+                                    if code and code.strip():
+                                        all_results[model_name] = {
+                                            'code': code,
+                                            'model_id': model_id,
+                                            'success': True,
+                                            'prompt': prompt_to_use
+                                        }
+                                    else:
+                                        all_results[model_name] = {
+                                            'code': f"Error: {model_name} returned empty code",
+                                            'model_id': model_id,
+                                            'success': False,
+                                            'prompt': prompt_to_use
+                                        }
+                                else:
+                                    all_results[model_name] = {
+                                        'code': f"Error: {model_name} returned no choices",
+                                        'model_id': model_id,
+                                        'success': False,
+                                        'prompt': prompt_to_use
                                     }
-                                    
-                                    # Execute the code with both global and local contexts
-                                    exec(code, global_vars, global_vars)
-                                    
-                                    # Store the code in session state
-                                    st.session_state['generated_code'] = code
-                                except Exception as e:
-                                    vis_error = f"Error executing generated code: {e}"
-                                    st.error(vis_error)
-                                    plt.close('all')  # Clean up in case of error
-                except Exception as e:
-                    vis_error = f"Unexpected error with OpenRouter API: {e}"
-                    st.error(vis_error)
+                            else:
+                                all_results[model_name] = {
+                                    'code': f"API Error: {response.status_code}",
+                                    'model_id': model_id,
+                                    'success': False,
+                                    'prompt': prompt_to_use
+                                }
+                        except Exception as e:
+                            all_results[model_name] = {
+                                'code': f"Exception: {str(e)}",
+                                'model_id': model_id,
+                                'success': False,
+                                'prompt': prompt_to_use
+                            }
+                
+                # Store results in session state for persistence
+                st.session_state['all_results'] = all_results
+                st.success("✅ All models have completed! Results are displayed below and will persist until cleared.")
 
-        # Recreate the visualization if code exists in session state
-        if 'generated_code' in st.session_state and st.session_state['generated_code']:
-            try:
-                plt.figure()
-                code = st.session_state['generated_code']
-                code = code.replace("plt.show()", "")
-                code = code.replace("fig.show()", "")
-                global_vars = {
-                    'plt': plt,
-                    'pd': pd,
-                    'df': df,
-                    'go': go
-                }
-                exec(code, global_vars, global_vars)
-                st.subheader("Current Visualization:")  # Label the last visualization as 'Current Visualization'
-                if 'fig' in global_vars and isinstance(global_vars['fig'], go.Figure):
-                    st.plotly_chart(global_vars['fig'])
+        # Display results from session state (this will persist across reruns)
+        if st.session_state['all_results']:
+            st.markdown("---")
+            st.subheader("📊 Generated Visualizations")
+            st.info(f"**Current Prompt:** {st.session_state['current_prompt']}")
+            
+            # Display each model's results vertically
+            for i, (model_name, result) in enumerate(st.session_state['all_results'].items()):
+                # Add separator between models (except for the first one)
+                if i > 0:
+                    st.divider()
+                
+                # Create a container for each model's results
+                with st.container():
+                    st.markdown(f"## 🤖 {model_name}")
+                    st.info(f"**Model ID:** {result['model_id']}")
+                    
+                    # Add a subtle background color to distinguish each model section
+                    st.markdown("---")
+                
+                if result['success']:
+                    # Display generated code
+                    st.subheader("📝 Generated Python Code:")
+                    st.code(result['code'], language="python")
+                    
+                    # Execute and display visualization
+                    try:
+                        plt.figure()
+                        exec_code = result['code'].replace("plt.show()", "").replace("fig.show()", "")
+                        
+                        global_vars = {
+                            'plt': plt,
+                            'pd': pd,
+                            'df': df,
+                            'go': go
+                        }
+                        
+                        exec(exec_code, global_vars, global_vars)
+                        
+                        st.subheader("🎨 Generated Visualization:")
+                        if 'fig' in global_vars and isinstance(global_vars['fig'], go.Figure):
+                            st.plotly_chart(global_vars['fig'])
+                        else:
+                            st.pyplot(plt.gcf())
+                        
+                        plt.close('all')
+                        
+                        # Feedback button that opens modal
+                        st.subheader("⭐ Rate This Visualization:")
+                        
+                        # Show feedback count for this model
+                        feedback_count_key = f"feedback_count_{model_name}"
+                        if feedback_count_key not in st.session_state:
+                            st.session_state[feedback_count_key] = 0
+                        
+                        if st.session_state[feedback_count_key] > 0:
+                            st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
+                        
+                        # Button to open feedback modal
+                        if st.button(f"📝 Submit Feedback for {model_name}", key=f"feedback_btn_{model_name}"):
+                            st.session_state['feedback_modal_open'] = True
+                            st.session_state['selected_model_for_feedback'] = model_name
+                            st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Error executing code from {model_name}: {e}")
+                        plt.close('all')
                 else:
-                    st.pyplot(plt.gcf())
-                plt.close('all')
-            except Exception as e:
-                st.error(f"Error recreating visualization: {e}")
-                plt.close('all')
+                    st.error(f"❌ {result['code']}")
+                    st.info("This model encountered an error. Please try again or check your API configuration.")
 
-        # Feedback form only after visualization is generated and code is available
-        if st.session_state['generated_code'] is not None:
-            if 'comment' not in st.session_state:
-                st.session_state['comment'] = ''
-            with st.form("feedback_form"):
-                st.write("### Rate the generated visualization")
-                visual_accuracy = st.slider("Visual Accuracy (1=Poor, 5=Excellent)", 1, 5, 3)
-                visual_insightfulness = st.slider("Visual Insightfulness (1=Low, 5=High)", 1, 5, 3)
-                business_relevance = st.slider("Business Relevance (1=Low, 5=High)", 1, 5, 3)
-                comment = st.text_area("Comment (optional)", key='comment')
-                submitted = st.form_submit_button("Submit Feedback")
-                if submitted:
-                    conn = sqlite3.connect(DB_NAME)
-                    c = conn.cursor()
-                    c.execute(
-                        "INSERT INTO feedback (prompt, visual_accuracy, visual_insightfulness, business_relevance, comment, timestamp, code) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (prompt_to_use, visual_accuracy, visual_insightfulness, business_relevance, comment, datetime.now().isoformat(), st.session_state['generated_code'])
-                    )
-                    conn.commit()
-                    conn.close()
-                    st.session_state['clear_form'] = True
-                    st.session_state['generated_code'] = None
-                    st.success("Thank you for your feedback!")
-                    st.rerun()
+        # Feedback Modal using st.dialog (if available) or container
+        if st.session_state.get('feedback_modal_open', False):
+            selected_model = st.session_state.get('selected_model_for_feedback', '')
+            if selected_model and selected_model in st.session_state['all_results']:
+                result = st.session_state['all_results'][selected_model]
+                
+                # Create a modal-like experience
+                st.markdown("---")
+                st.markdown(f"### 📝 Feedback Form for {selected_model}")
+                st.info("Please rate the visualization and provide your feedback below.")
+                
+                with st.container():
+                    # Create the feedback form
+                    with st.form(f"feedback_modal_{selected_model}"):
+                        st.markdown(f"**Model:** {selected_model}")
+                        st.markdown(f"**Prompt:** {result.get('prompt', st.session_state['current_prompt'])}")
+                        
+                        # Display problem information
+                        selected_problem = st.session_state.get('selected_problem', '')
+                        if selected_problem and selected_problem in business_problems:
+                            problem_details = business_problems[selected_problem]
+                            st.markdown(f"**Business Problem:** {selected_problem}")
+                            st.markdown(f"**Problem ID:** {problem_details['ProblemID']}")
+                            st.markdown(f"**Visualization Type:** {problem_details['Visualization Type']}")
+                            st.markdown(f"**Complexity:** {problem_details['Complexity']}")
+                        else:
+                            st.warning("⚠️ No business problem selected")
+                        
+                        visual_accuracy = st.slider("Visual Accuracy (1=Poor, 5=Excellent)", 1, 5, 3)
+                        visual_insightfulness = st.slider("Visual Insightfulness (1=Low, 5=High)", 1, 5, 3)
+                        business_relevance = st.slider("Business Relevance (1=Low, 5=High)", 1, 5, 3)
+                        comment = st.text_area("Comment (optional)", height=100)
+                        
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            submitted = st.form_submit_button("✅ Submit Feedback", use_container_width=True)
+                        with col2:
+                            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+                        
+                        if cancel:
+                            st.session_state['feedback_modal_open'] = False
+                            st.session_state['selected_model_for_feedback'] = ""
+                            st.rerun()
+                        
+                        if submitted:
+                            try:
+                                # Get the problem_id from the selected business problem
+                                selected_problem = st.session_state.get('selected_problem', '')
+                                problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
+                                
+                                # Save feedback to Supabase
+                                feedback_result = save_feedback_to_supabase(
+                                    model_name=selected_model,
+                                    prompt=result.get('prompt', st.session_state['current_prompt']),
+                                    problem_id=problem_id,
+                                    visual_accuracy=visual_accuracy,
+                                    visual_insightfulness=visual_insightfulness,
+                                    business_relevance=business_relevance,
+                                    comment=comment,
+                                    code=result['code']
+                                )
+                                
+                                if feedback_result['success']:
+                                    # Update feedback count for this model
+                                    feedback_count_key = f"feedback_count_{selected_model}"
+                                    st.session_state[feedback_count_key] = st.session_state.get(feedback_count_key, 0) + 1
+                                    
+                                    # Close modal
+                                    st.session_state['feedback_modal_open'] = False
+                                    st.session_state['selected_model_for_feedback'] = ""
+                                    
+                                    # Show success and refresh
+                                    st.success(f"✅ Feedback for {selected_model} submitted successfully!")
+                                    st.info("The page will refresh to show your updated feedback count.")
+                                    st.rerun()
+                                    
+                                else:
+                                    st.error(f"Error saving feedback: {feedback_result.get('error', 'Unknown error')}")
+                                
+                            except Exception as e:
+                                st.error(f"Error saving feedback: {e}")
+                                print(f"Supabase error: {e}")
+
     else:
         st.error("Dataset could not be loaded. Please check the file path or format.")

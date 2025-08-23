@@ -1,25 +1,31 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
+from supabase_feedback import get_feedback_analysis
 
 
 def load_feedback():
     try:
-        conn = sqlite3.connect("prompt_feedback.db")
-        df = pd.read_sql_query("SELECT * FROM feedback ORDER BY timestamp DESC", conn)
-        conn.close()
-        return df
+        feedback_data = get_feedback_analysis()
+        if feedback_data:
+            df = pd.DataFrame(feedback_data)
+            # Sort by created_at in descending order
+            if 'created_at' in df.columns:
+                df['created_at'] = pd.to_datetime(df['created_at'])
+                df = df.sort_values('created_at', ascending=False)
+            return df
+        else:
+            return pd.DataFrame()
     except Exception as e:
-        st.error(f"Error reading from database: {e}")
+        st.error(f"Error reading from Supabase: {e}")
         return pd.DataFrame()
 
 def show_feedback_analysis():
     st.title("PromptVix Feedback Viewer")
-    st.subheader("📊 View Submitted Prompt Feedback")
+    st.subheader("📊 View Submitted Prompt Feedback from Supabase")
     refresh = st.button("Refresh Feedback Records")
     feedback_df = load_feedback()
     if feedback_df.empty:
-        st.info("No feedback records found.")
+        st.info("No feedback records found in Supabase.")
     else:
         st.success(f"{len(feedback_df)} feedback record(s) found.")
         st.dataframe(feedback_df, use_container_width=True)

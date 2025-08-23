@@ -2,11 +2,10 @@ import streamlit as st
 from dotenv import load_dotenv
 from prompt_handler import handle_prompt_tab
 from analysis import show_feedback_analysis
-from feedback_db import init_db
 
-# Load env variables and initialize DB
+
+# Load env variables
 load_dotenv()
-init_db()
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
