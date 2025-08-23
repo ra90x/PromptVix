@@ -332,10 +332,10 @@ Requirements:
                         else:
                             st.warning("⚠️ No business problem selected")
                         
-                        visual_accuracy = st.slider("Visual Accuracy (1=Poor, 5=Excellent)", 1, 5, 3)
-                        visual_insightfulness = st.slider("Visual Insightfulness (1=Low, 5=High)", 1, 5, 3)
-                        business_relevance = st.slider("Business Relevance (1=Low, 5=High)", 1, 5, 3)
-                        comment = st.text_area("Comment (optional)", height=100)
+                        visual_accuracy = st.slider("Visual Accuracy - Was the visualization clear, easy to understand, and appropriately formatted (labels, chart type, colours)? (1=Poor, 5=Excellent)", 1, 5, 3)
+                        visual_insightfulness = st.slider("Visual Insightfulness - Did the visualization help you gain useful insights or notice patterns in the data? (1=Low, 5=High)", 1, 5, 3)
+                        business_relevance = st.slider("Business Relevance - How relevant is the visualization to the business problem? (1=Low, 5=High)", 1, 5, 3)
+                        comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
                         
                         col1, col2 = st.columns([1, 1])
                         with col1:
