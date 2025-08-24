@@ -64,26 +64,18 @@ POSITIVE_OUTCOMES = [
     "Useful for decision-making",
     "Clear and easy to understand",
     "Appropriate chart type",
-    "Insightful interpretation",
-    "Contextually relevant",
-    "Trustworthy and reliable",
-    "Efficient and clean code",
-    "Interactive when beneficial"
+    "Efficient and reliable code"
 ]
 
 NEGATIVE_OUTCOMES = [
     "Hallucination (invented data, labels, or trends)",
-    "Oversimplification / surface-level insight",
+    "Oversimplification or surface-level insight",
     "Misleading visual design (e.g., distorted scales)",
-    "Incorrect data aggregation or transformation",
-    "Missing key variables or dimensions",
+    "Incorrect data aggregation or logic",
+    "Missing key variables or context",
     "Poor or inappropriate chart choice",
-    "Prompt sensitivity (drastic change on minor edit)",
-    "Code errors or non-executable output",
-    "Assumed incorrect data structure",
-    "Visual clutter or overplotting",
-    "Unclear or inconsistent labels/titles",
-    "Required multiple refinements"
+    "Prompt sensitivity (output changes drastically on minor edits)",
+    "Code not executable or contains errors"
 ]
 
 def handle_prompt_tab():
