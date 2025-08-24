@@ -161,6 +161,9 @@ def handle_prompt_tab():
 
         # Toggle for custom prompt input
         use_custom_prompt = st.checkbox("Write your own prompt instead", value=False)
+        # Store the custom prompt state in session state
+        st.session_state['use_custom_prompt'] = use_custom_prompt
+        
         if use_custom_prompt:
             if 'user_request' not in st.session_state:
                 st.session_state['user_request'] = selected_problem + " using " + details['Visualization Type']
@@ -471,9 +474,16 @@ Requirements:
                         
                         if submitted:
                             try:
-                                # Get the problem_id from the selected business problem
+                                # Get the problem_id based on whether user wrote their own prompt
                                 selected_problem = st.session_state.get('selected_problem', '')
-                                problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
+                                use_custom_prompt = st.session_state.get('use_custom_prompt', False)
+                                
+                                if use_custom_prompt:
+                                    # If user wrote their own prompt, set problem_id to 0
+                                    problem_id = 0
+                                else:
+                                    # Use the selected business problem ID
+                                    problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
                                 
                                 # Convert multi-select lists to comma-separated strings
                                 positive_outcomes_str = ", ".join(positive_outcomes_selected) if positive_outcomes_selected else ""
