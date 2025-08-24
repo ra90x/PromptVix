@@ -35,6 +35,9 @@ def save_feedback_to_supabase(
     visual_accuracy: int,
     visual_insightfulness: int,
     business_relevance: int,
+    iteration_count: int,
+    positive_outcomes: str,
+    negative_outcomes: str,
     comment: str = None,
     code: str = None
 ) -> dict:
@@ -48,6 +51,9 @@ def save_feedback_to_supabase(
         visual_accuracy: Accuracy rating (1-5)
         visual_insightfulness: Insightfulness rating (1-5)
         business_relevance: Business relevance rating (1-5)
+        iteration_count: Number of iterations needed
+        positive_outcomes: Comma-separated positive outcomes
+        negative_outcomes: Comma-separated negative outcomes
         comment: Optional comment
         code: Generated code
     
@@ -73,6 +79,9 @@ def save_feedback_to_supabase(
             "visual_accuracy": visual_accuracy,
             "visual_insightfulness": visual_insightfulness,
             "business_relevance": business_relevance,
+            "iteration": iteration_count,
+            "pos_outcome": positive_outcomes,
+            "neg_outcome": negative_outcomes,
             "comment": comment,
             "code": code,
             "session_id": session_id,

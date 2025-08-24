@@ -18,6 +18,82 @@ import plotly.graph_objects as go
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for Streamlit
 
+def get_model_background_color(model_name):
+    """Return a subtle background color for each model"""
+    model_colors = {
+        'DeepSeek': 'rgba(59, 130, 246, 0.1)',  # Subtle blue
+        'OpenAI': 'rgba(16, 185, 129, 0.1)',    # Subtle green
+        'Claude': 'rgba(139, 92, 246, 0.1)',    # Subtle purple
+        'Gemini': 'rgba(249, 115, 22, 0.1)',    # Subtle orange
+        'Llama': 'rgba(239, 68, 68, 0.1)',      # Subtle red
+        'Mistral': 'rgba(236, 72, 153, 0.1)',   # Subtle pink
+        'Qwen': 'rgba(34, 197, 94, 0.1)',       # Subtle emerald
+        'Default': 'rgba(107, 114, 128, 0.1)'   # Subtle gray
+    }
+    
+    # Find the model color by checking if model_name contains any key
+    for key, color in model_colors.items():
+        if key.lower() in model_name.lower():
+            return color
+    return model_colors['Default']
+
+def get_model_border_color(model_name):
+    """Return a subtle border color for each model"""
+    model_colors = {
+        'DeepSeek': 'rgba(59, 130, 246, 0.3)',  # Blue border
+        'OpenAI': 'rgba(16, 185, 129, 0.3)',    # Green border
+        'Claude': 'rgba(139, 92, 246, 0.3)',    # Purple border
+        'Gemini': 'rgba(249, 115, 22, 0.3)',    # Orange border
+        'Llama': 'rgba(239, 68, 68, 0.3)',      # Red border
+        'Mistral': 'rgba(236, 72, 153, 0.3)',   # Pink border
+        'Qwen': 'rgba(34, 197, 94, 0.3)',       # Emerald border
+        'Default': 'rgba(107, 114, 128, 0.3)'   # Gray border
+    }
+    
+    # Find the model color by checking if model_name contains any key
+    for key, color in model_colors.items():
+        if key.lower() in model_name.lower():
+            return color
+    return model_colors['Default']
+
+
+# Define positive and negative outcome lists for evaluation
+POSITIVE_OUTCOMES = [
+    "Correct and accurate",
+    "Reveals new patterns / trends",
+    "Useful for decision-making",
+    "Clear and easy to read",
+    "Appropriate chart choice",
+    "Insightful interpretation",
+    "Efficient and clean code",
+    "Incorporates best practices",
+    "Contextually relevant",
+    "Interactive when needed",
+    "Trustworthy & reliable",
+    "Reveals multivariate relationships"
+]
+
+NEGATIVE_OUTCOMES = [
+    "Hallucination (invented data/trends)",
+    "Oversimplification",
+    "Misleading visual encoding",
+    "Incorrect aggregation",
+    "Doesn't match dataset context",
+    "Missing key variables",
+    "Poor chart choice",
+    "Prompt Sensitivity",
+    "Surface-level insights only",
+    "Obvious or redundant insight",
+    "Code errors or non-executable",
+    "Assumes wrong data structure",
+    "Ignores data quality issues",
+    "Visual clutter / overplotting",
+    "Inconsistent or confusing labels",
+    "Biased representation",
+    "Needed multiple refinements",
+    "Lack of uncertainty communication"
+]
+
 def handle_prompt_tab():
     # Set up the Streamlit app title and subtitle
     st.title("📈 PromptVix")
@@ -227,19 +303,29 @@ Requirements:
             st.subheader("📊 Generated Visualizations")
             st.info(f"**Current Prompt:** {st.session_state['current_prompt']}")
             
-            # Display each model's results vertically
+            # Display each model's results vertically with colored backgrounds
             for i, (model_name, result) in enumerate(st.session_state['all_results'].items()):
-                # Add separator between models (except for the first one)
-                if i > 0:
-                    st.divider()
+                # Get colors for this model
+                bg_color = get_model_background_color(model_name)
+                border_color = get_model_border_color(model_name)
                 
-                # Create a container for each model's results
-                with st.container():
-                    st.markdown(f"## 🤖 {model_name}")
-                    st.info(f"**Model ID:** {result['model_id']}")
-                    
-                    # Add a subtle background color to distinguish each model section
-                    st.markdown("---")
+                # Create a styled container with background color
+                st.markdown(f"""
+                <div style="
+                    background-color: {bg_color};
+                    border: 2px solid {border_color};
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin: 20px 0;
+                ">
+                """, unsafe_allow_html=True)
+                
+                # Add an anchor point for auto-scrolling
+                st.markdown(f'<div id="model-section-{model_name.replace(" ", "-")}"></div>', unsafe_allow_html=True)
+                
+                # Model header
+                st.markdown(f"## 🤖 {model_name}")
+                st.info(f"**Model ID:** {result['model_id']}")
                 
                 if result['success']:
                     # Display generated code
@@ -271,6 +357,10 @@ Requirements:
                     except Exception as e:
                         st.error(f"Error executing code from {model_name}: {e}")
                         plt.close('all')
+                else:
+                    # Show error message if the model failed
+                    st.error(f"❌ {result['code']}")
+                    st.info("This model encountered an error. Please try again or check your API configuration.")
                 
                 # Always show feedback section regardless of success/error
                 st.subheader("⭐ Rate This Visualization:")
@@ -283,18 +373,14 @@ Requirements:
                 if st.session_state[feedback_count_key] > 0:
                     st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
                 
-                # Button to open feedback modal
+                # Button to open feedback modal with auto-scroll
                 if st.button(f"📝 Submit Feedback for {model_name}", key=f"feedback_btn_{model_name}"):
                     st.session_state['feedback_modal_open'] = True
                     st.session_state['selected_model_for_feedback'] = model_name
-                    # Add anchor for auto-scrolling
-                    st.markdown(f'<div id="feedback-form-{model_name}"></div>', unsafe_allow_html=True)
                     st.rerun()
                 
-                # Show error message if the model failed
-                if not result['success']:
-                    st.error(f"❌ {result['code']}")
-                    st.info("This model encountered an error. Please try again or check your API configuration.")
+                # Close the styled div
+                st.markdown("</div>", unsafe_allow_html=True)
 
         # Feedback Modal using st.dialog (if available) or container
         if st.session_state.get('feedback_modal_open', False):
@@ -302,19 +388,34 @@ Requirements:
             if selected_model and selected_model in st.session_state['all_results']:
                 result = st.session_state['all_results'][selected_model]
                 
-                # Add auto-scroll JavaScript
-                st.markdown("""
+                # Auto-scroll to feedback form
+                st.markdown(f"""
                 <script>
-                // Auto-scroll to feedback form when it opens
-                window.scrollTo({
-                    top: document.body.scrollHeight,
-                    behavior: 'smooth'
-                });
+                    // Auto-scroll to feedback form when it opens
+                    setTimeout(function() {{
+                        document.getElementById('feedback-form-{selected_model.replace(" ", "-")}').scrollIntoView({{
+                            behavior: 'smooth',
+                            block: 'start'
+                        }});
+                    }}, 100);
                 </script>
                 """, unsafe_allow_html=True)
                 
-                # Create a modal-like experience
-                st.markdown("---")
+                # Create a modal-like experience with styled background
+                bg_color = get_model_background_color(selected_model)
+                border_color = get_model_border_color(selected_model)
+                
+                st.markdown(f"""
+                <div id="feedback-form-{selected_model.replace(" ", "-")}" style="
+                    background-color: {bg_color};
+                    border: 3px solid {border_color};
+                    border-radius: 15px;
+                    padding: 25px;
+                    margin: 30px 0;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                ">
+                """, unsafe_allow_html=True)
+                
                 st.markdown(f"### 📝 Feedback Form for {selected_model}")
                 st.info("Please rate the visualization and provide your feedback below.")
                 
@@ -338,6 +439,31 @@ Requirements:
                         visual_accuracy = st.slider("Visual Accuracy - Was the visualization clear, easy to understand, and appropriately formatted (labels, chart type, colours)? (1=Poor, 5=Excellent)", 1, 5, 3)
                         visual_insightfulness = st.slider("Visual Insightfulness - Did the visualization help you gain useful insights or notice patterns in the data? (1=Low, 5=High)", 1, 5, 3)
                         business_relevance = st.slider("Business Relevance - How relevant is the visualization to the business problem? (1=Low, 5=High)", 1, 5, 3)
+                        
+                        # New field: Iteration Count
+                        iteration_count = st.number_input(
+                            "Iteration Count - How many iterations did it take you to get the final outcome?",
+                            min_value=1,
+                            max_value=20,
+                            value=1,
+                            step=1,
+                            help="Enter the number of attempts or refinements needed"
+                        )
+                        
+                        # New field: Positive Outcomes (Multi-select)
+                        positive_outcomes_selected = st.multiselect(
+                            "Positive Outcomes - Select all that apply:",
+                            options=POSITIVE_OUTCOMES,
+                            help="Choose all positive aspects of this visualization"
+                        )
+                        
+                        # New field: Negative Outcomes (Multi-select)
+                        negative_outcomes_selected = st.multiselect(
+                            "Negative Outcomes - Select all that apply:",
+                            options=NEGATIVE_OUTCOMES,
+                            help="Choose all negative aspects or issues with this visualization"
+                        )
+                        
                         comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
                         
                         col1, col2 = st.columns([1, 1])
@@ -357,6 +483,10 @@ Requirements:
                                 selected_problem = st.session_state.get('selected_problem', '')
                                 problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
                                 
+                                # Convert multi-select lists to comma-separated strings
+                                positive_outcomes_str = ", ".join(positive_outcomes_selected) if positive_outcomes_selected else ""
+                                negative_outcomes_str = ", ".join(negative_outcomes_selected) if negative_outcomes_selected else ""
+                                
                                 # Save feedback to Supabase
                                 feedback_result = save_feedback_to_supabase(
                                     model_name=selected_model,
@@ -365,6 +495,9 @@ Requirements:
                                     visual_accuracy=visual_accuracy,
                                     visual_insightfulness=visual_insightfulness,
                                     business_relevance=business_relevance,
+                                    iteration_count=iteration_count,
+                                    positive_outcomes=positive_outcomes_str,
+                                    negative_outcomes=negative_outcomes_str,
                                     comment=comment,
                                     code=result['code']
                                 )
@@ -389,6 +522,9 @@ Requirements:
                             except Exception as e:
                                 st.error(f"Error saving feedback: {e}")
                                 print(f"Supabase error: {e}")
+                
+                # Close the styled div for feedback form
+                st.markdown("</div>", unsafe_allow_html=True)
 
     else:
         st.error("Dataset could not be loaded. Please check the file path or format.")
