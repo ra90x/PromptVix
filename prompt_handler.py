@@ -82,16 +82,12 @@ NEGATIVE_OUTCOMES = [
     "Missing key variables",
     "Poor chart choice",
     "Prompt Sensitivity",
-    "Surface-level insights only",
-    "Obvious or redundant insight",
     "Code errors or non-executable",
     "Assumes wrong data structure",
-    "Ignores data quality issues",
     "Visual clutter / overplotting",
     "Inconsistent or confusing labels",
-    "Biased representation",
     "Needed multiple refinements",
-    "Lack of uncertainty communication"
+
 ]
 
 def handle_prompt_tab():
