@@ -60,34 +60,30 @@ def get_model_border_color(model_name):
 # Define positive and negative outcome lists for evaluation
 POSITIVE_OUTCOMES = [
     "Correct and accurate",
-    "Reveals new patterns / trends",
+    "Reveals new patterns or trends",
     "Useful for decision-making",
-    "Clear and easy to read",
-    "Appropriate chart choice",
+    "Clear and easy to understand",
+    "Appropriate chart type",
     "Insightful interpretation",
-    "Efficient and clean code",
-    "Incorporates best practices",
     "Contextually relevant",
-    "Interactive when needed",
-    "Trustworthy & reliable",
-    "Reveals multivariate relationships"
+    "Trustworthy and reliable",
+    "Efficient and clean code",
+    "Interactive when beneficial"
 ]
 
 NEGATIVE_OUTCOMES = [
-    "Hallucination (invented data/trends)",
-    "Oversimplification",
-    "Misleading visual encoding",
-    "Incorrect aggregation",
-    "Doesn't match dataset context",
-    "Missing key variables",
-    "Poor chart choice",
-    "Prompt Sensitivity",
-    "Code errors or non-executable",
-    "Assumes wrong data structure",
-    "Visual clutter / overplotting",
-    "Inconsistent or confusing labels",
-    "Needed multiple refinements",
-
+    "Hallucination (invented data, labels, or trends)",
+    "Oversimplification / surface-level insight",
+    "Misleading visual design (e.g., distorted scales)",
+    "Incorrect data aggregation or transformation",
+    "Missing key variables or dimensions",
+    "Poor or inappropriate chart choice",
+    "Prompt sensitivity (drastic change on minor edit)",
+    "Code errors or non-executable output",
+    "Assumed incorrect data structure",
+    "Visual clutter or overplotting",
+    "Unclear or inconsistent labels/titles",
+    "Required multiple refinements"
 ]
 
 def handle_prompt_tab():
