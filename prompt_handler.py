@@ -73,6 +73,7 @@ NEGATIVE_OUTCOMES = [
     "Misleading visual design (e.g., distorted scales)",
     "Incorrect data aggregation or logic",
     "Missing key variables or context",
+    "Missing key visual elements (e.g., labels, titles, legends)",
     "Poor or inappropriate chart choice",
     "Prompt sensitivity (output changes drastically on minor edits)",
     "Code not executable or contains errors"
@@ -121,18 +122,35 @@ def handle_prompt_tab():
             return None
         try:
             df = pd.read_csv(DEFAULT_DATASET_PATH, encoding='latin1')
-            df.to_csv('cleaned_file.csv', encoding='utf-8', index=False)
+            df.to_csv('Superstore_Dataset.csv', encoding='utf-8', index=False)
             return df
         except Exception as e:
             st.error(f"Failed to read CSV file: {e}")
             return None
 
-    # Use only the default dataset (no upload/reload functionality)
-    df = load_data()
+    # Allow dataset upload or use default
+    df = None
+    st.subheader("Upload Dataset (optional)")
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    if uploaded_file:
+        try:
+            df = pd.read_csv(uploaded_file)
+        except Exception as e:
+            st.error(f"Failed to read uploaded CSV: {e}")
+            df = None
+    else:
+        df = load_data()
+
+    if st.button("Reload Dataset"):
+        st.cache_data.clear()
+        df = load_data()
 
     if df is not None:
         st.subheader("Dataset Information:")
-        st.info(f"📊 Using provided dataset: **{DEFAULT_DATASET_PATH}**")
+        if uploaded_file:
+            st.info(f"📊 Using uploaded dataset: **{uploaded_file.name}**")
+        else:
+            st.info(f"📊 Using provided dataset: **{DEFAULT_DATASET_PATH}**")
         st.subheader("Data Preview:")
         st.dataframe(df.head(10))
 
@@ -365,6 +383,8 @@ Requirements:
                     st.session_state['feedback_modal_open'] = True
                     st.session_state['selected_model_for_feedback'] = model_name
                     st.rerun()
+                
+
                 
                 # Close the styled div
                 st.markdown("</div>", unsafe_allow_html=True)

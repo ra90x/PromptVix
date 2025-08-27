@@ -43,7 +43,7 @@ if not SUPABASE_ANON_KEY:
 
 
 # Dataset Configuration
-DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', "cleaned_file.csv")
+DEFAULT_DATASET_PATH = os.getenv('DEFAULT_DATASET_PATH', "Superstore_Dataset.csv")
 
 
 # Other Configuration Settings
