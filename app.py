@@ -1,8 +1,10 @@
+"""Main application entry point for PromptVix."""
+
 import streamlit as st
 from dotenv import load_dotenv
-from prompt_handler import handle_prompt_tab
-from analysis import show_feedback_analysis
 
+from analysis import show_feedback_analysis
+from prompt_handler import handle_prompt_tab
 
 # Load environment variables
 load_dotenv()
@@ -12,7 +14,10 @@ def main():
     """Main application entry point."""
     # Sidebar navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["📈 PromptVix", "📊 Feedback Analysis"])
+    page = st.sidebar.radio(
+        "Go to", 
+        ["📈 PromptVix", "📊 Feedback Analysis"]
+    )
 
     # Add watermark at the bottom of the sidebar
     st.sidebar.markdown("""

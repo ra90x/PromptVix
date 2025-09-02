@@ -1,25 +1,35 @@
 import os
-import json
 import re
 import requests
+
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
-import streamlit as st
-from datetime import datetime
-# from feedback_db import save_feedback
-from utils import load_default_dataset, is_code_safe
-
-from prompt_scenarios import business_problems
-from config import OPENROUTER_API_KEY, AVAILABLE_MODELS, OPENROUTER_BASE_URL, DEFAULT_DATASET_PATH, MAX_TOKENS, TEMPERATURE
-from supabase_feedback import save_feedback_to_supabase, get_feedback_count
 import plotly.graph_objects as go
+import streamlit as st
+
+from config import (
+    AVAILABLE_MODELS,
+    DEFAULT_DATASET_PATH,
+    MAX_TOKENS,
+    OPENROUTER_API_KEY,
+    TEMPERATURE
+)
+from prompt_scenarios import business_problems
+from supabase_feedback import get_feedback_count, save_feedback_to_supabase
 
 # Configure matplotlib for Streamlit compatibility
-import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for Streamlit
 
 def get_model_background_color(model_name):
-    """Return a subtle background color for each model"""
+    """Return a subtle background color for each model.
+    
+    Args:
+        model_name (str): Name of the model to get color for
+        
+    Returns:
+        str: CSS rgba color string for the model
+    """
     model_colors = {
         'DeepSeek': 'rgba(59, 130, 246, 0.1)',  # Subtle blue
         'OpenAI': 'rgba(16, 185, 129, 0.1)',    # Subtle green
@@ -38,7 +48,14 @@ def get_model_background_color(model_name):
     return model_colors['Default']
 
 def get_model_border_color(model_name):
-    """Return a subtle border color for each model"""
+    """Return a subtle border color for each model.
+    
+    Args:
+        model_name (str): Name of the model to get border color for
+        
+    Returns:
+        str: CSS rgba color string for the model border
+    """
     model_colors = {
         'DeepSeek': 'rgba(59, 130, 246, 0.3)',  # Blue border
         'OpenAI': 'rgba(16, 185, 129, 0.3)',    # Green border
@@ -80,6 +97,15 @@ NEGATIVE_OUTCOMES = [
 ]
 
 def handle_prompt_tab():
+    """Handle the main prompt tab functionality.
+    
+    This function manages the entire prompt interface including:
+    - Dataset loading and display
+    - Business problem selection
+    - LLM model execution
+    - Results display in tabs
+    - Feedback collection
+    """
     # Set up the Streamlit app title and subtitle
     st.title("📈 PromptVix")
     st.subheader("IT Artefact | Developed by Ramz A.", divider=True)
@@ -109,10 +135,6 @@ def handle_prompt_tab():
         st.session_state['current_prompt'] = ""
     if 'selected_problem' not in st.session_state:
         st.session_state['selected_problem'] = ""
-    if 'feedback_modal_open' not in st.session_state:
-        st.session_state['feedback_modal_open'] = False
-    if 'selected_model_for_feedback' not in st.session_state:
-        st.session_state['selected_model_for_feedback'] = ""
 
     @st.cache_data(show_spinner=True)
     def load_data():
@@ -167,7 +189,10 @@ def handle_prompt_tab():
         
         # Display details of the selected business problem
         details = business_problems[selected_problem]
-        st.info(f"**Visualization Type:** {details['Visualization Type']}\n**Complexity:** {details['Complexity']}")
+        st.info(
+            f"**Visualization Type:** {details['Visualization Type']}\n"
+            f"**Complexity:** {details['Complexity']}"
+        )
 
         # Toggle for custom prompt input
         use_custom_prompt = st.checkbox("Write your own prompt instead", value=False)
@@ -176,7 +201,9 @@ def handle_prompt_tab():
         
         if use_custom_prompt:
             if 'user_request' not in st.session_state:
-                st.session_state['user_request'] = selected_problem + " using " + details['Visualization Type']
+                st.session_state['user_request'] = (
+                    selected_problem + " using " + details['Visualization Type']
+                )
             user_request = st.text_area(
                 "🚀 Enter your custom prompt:",
                 key='user_request',
@@ -188,7 +215,10 @@ def handle_prompt_tab():
 
         # Generate Visualizations from All LLM Models
         st.subheader("◆ Generate Visualizations from All LLM Models")
-        st.info("Click the button below to generate visualizations using all available AI models simultaneously.")
+        st.info(
+            "Click the button below to generate visualizations using all "
+            "available AI models simultaneously."
+        )
         
         # Clear results button
         col1, col2 = st.columns([1, 1])
@@ -245,7 +275,14 @@ Requirements:
                             payload = {
                                 "model": model_id,
                                 "messages": [
-                                    {"role": "system", "content": "You are a Python code generator. Return only executable Python code, no explanations."},
+                                    {
+                                        "role": "system", 
+                                        "content": (
+                                            "You are a Python code generator. "
+                                            "Return only executable Python code, "
+                                            "no explanations."
+                                        )
+                                    },
                                     {"role": "user", "content": prompt}
                                 ],
                                 "max_tokens": MAX_TOKENS,
@@ -259,7 +296,12 @@ Requirements:
                                 if 'choices' in response_data and response_data['choices']:
                                     code = response_data['choices'][0]['message']['content']
                                     # Clean the code
-                                    code = re.sub(r"^```(?:python)?\s*", "", code.strip(), flags=re.IGNORECASE)
+                                    code = re.sub(
+                                        r"^```(?:python)?\s*", 
+                                        "", 
+                                        code.strip(), 
+                                        flags=re.IGNORECASE
+                                    )
                                     code = re.sub(r"\s*```$", "", code, flags=re.IGNORECASE)
                                     
                                     if code and code.strip():
@@ -300,7 +342,10 @@ Requirements:
                 
                 # Store results in session state for persistence
                 st.session_state['all_results'] = all_results
-                st.success("✅ All models have completed! Results are displayed below and will persist until cleared.")
+                st.success(
+                    "✅ All models have completed! Results are displayed below "
+                    "and will persist until cleared."
+                )
 
         # Display results from session state (this will persist across reruns)
         if st.session_state['all_results']:
@@ -308,237 +353,235 @@ Requirements:
             st.subheader("📊 Generated Visualizations")
             st.info(f"**Current Prompt:** {st.session_state['current_prompt']}")
             
-            # Display each model's results vertically with colored backgrounds
-            for i, (model_name, result) in enumerate(st.session_state['all_results'].items()):
-                # Get colors for this model
-                bg_color = get_model_background_color(model_name)
-                border_color = get_model_border_color(model_name)
+            # Create tabs for each model with logos
+            model_names = list(st.session_state['all_results'].keys())
+            tab_labels = []
+            for model_name in model_names:
+                # Map model names to their logo files
+                logo_map = {
+                    'DeepSeek': 'deepseek.png',
+                    'OpenAI': 'openai.png', 
+                    'Claude': 'claude.png'
+                }
                 
-                # Create a styled container with background color
-                st.markdown(f"""
-                <div style="
-                    background-color: {bg_color};
-                    border: 2px solid {border_color};
-                    border-radius: 10px;
-                    padding: 20px;
-                    margin: 20px 0;
-                ">
-                """, unsafe_allow_html=True)
+                # Find matching logo
+                logo_file = None
+                for key, logo in logo_map.items():
+                    if key.lower() in model_name.lower():
+                        logo_file = logo
+                        break
                 
-                # Add an anchor point for auto-scrolling
-                st.markdown(f'<div id="model-section-{model_name.replace(" ", "-")}"></div>', unsafe_allow_html=True)
-                
-                # Model header
-                st.markdown(f"## 🤖 {model_name}")
-                st.info(f"**Model ID:** {result['model_id']}")
-                
-                if result['success']:
-                    # Display generated code
-                    st.subheader("📝 Generated Python Code:")
-                    st.code(result['code'], language="python")
-                    
-                    # Execute and display visualization
-                    try:
-                        plt.figure()
-                        exec_code = result['code'].replace("plt.show()", "").replace("fig.show()", "")
-                        
-                        global_vars = {
-                            'plt': plt,
-                            'pd': pd,
-                            'df': df,
-                            'go': go
-                        }
-                        
-                        exec(exec_code, global_vars, global_vars)
-                        
-                        st.subheader("🎨 Generated Visualization:")
-                        if 'fig' in global_vars and isinstance(global_vars['fig'], go.Figure):
-                            st.plotly_chart(global_vars['fig'])
-                        else:
-                            st.pyplot(plt.gcf())
-                        
-                        plt.close('all')
-                        
-                    except Exception as e:
-                        st.error(f"Error executing code from {model_name}: {e}")
-                        plt.close('all')
+                if logo_file:
+                    # Create tab label with logo
+                    tab_labels.append(f"![{model_name}](public/{logo_file}) {model_name}")
                 else:
-                    # Show error message if the model failed
-                    st.error(f"❌ {result['code']}")
-                    st.info("This model encountered an error. Please try again or check your API configuration.")
-                
-                # Always show feedback section regardless of success/error
-                st.subheader("⭐ Rate This Visualization:")
-                
-                # Show feedback count for this model
-                feedback_count_key = f"feedback_count_{model_name}"
-                if feedback_count_key not in st.session_state:
-                    st.session_state[feedback_count_key] = 0
-                
-                if st.session_state[feedback_count_key] > 0:
-                    st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
-                
-                # Button to open feedback modal with auto-scroll
-                if st.button(f"📝 Submit Feedback for {model_name}", key=f"feedback_btn_{model_name}"):
-                    st.session_state['feedback_modal_open'] = True
-                    st.session_state['selected_model_for_feedback'] = model_name
-                    st.rerun()
-                
-
-                
-                # Close the styled div
-                st.markdown("</div>", unsafe_allow_html=True)
-
-        # Feedback Modal using st.dialog (if available) or container
-        if st.session_state.get('feedback_modal_open', False):
-            selected_model = st.session_state.get('selected_model_for_feedback', '')
-            if selected_model and selected_model in st.session_state['all_results']:
-                result = st.session_state['all_results'][selected_model]
-                
-                # Auto-scroll to feedback form
-                st.markdown(f"""
-                <script>
-                    // Auto-scroll to feedback form when it opens
-                    setTimeout(function() {{
-                        document.getElementById('feedback-form-{selected_model.replace(" ", "-")}').scrollIntoView({{
-                            behavior: 'smooth',
-                            block: 'start'
-                        }});
-                    }}, 100);
-                </script>
-                """, unsafe_allow_html=True)
-                
-                # Create a modal-like experience with styled background
-                bg_color = get_model_background_color(selected_model)
-                border_color = get_model_border_color(selected_model)
-                
-                st.markdown(f"""
-                <div id="feedback-form-{selected_model.replace(" ", "-")}" style="
-                    background-color: {bg_color};
-                    border: 3px solid {border_color};
-                    border-radius: 15px;
-                    padding: 25px;
-                    margin: 30px 0;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                ">
-                """, unsafe_allow_html=True)
-                
-                st.markdown(f"### 📝 Feedback Form for {selected_model}")
-                st.info("Please rate the visualization and provide your feedback below.")
-                
-                with st.container():
-                    # Create the feedback form
-                    with st.form(f"feedback_modal_{selected_model}"):
-                        st.markdown(f"**Model:** {selected_model}")
-                        st.markdown(f"**Prompt:** {result.get('prompt', st.session_state['current_prompt'])}")
-                        
-                        # Display problem information
-                        selected_problem = st.session_state.get('selected_problem', '')
-                        if selected_problem and selected_problem in business_problems:
-                            problem_details = business_problems[selected_problem]
-                            st.markdown(f"**Business Problem:** {selected_problem}")
-                            st.markdown(f"**Problem ID:** {problem_details['ProblemID']}")
-                            st.markdown(f"**Visualization Type:** {problem_details['Visualization Type']}")
-                            st.markdown(f"**Complexity:** {problem_details['Complexity']}")
-                        else:
-                            st.warning("⚠️ No business problem selected")
-                        
-                        visual_accuracy = st.slider("Visual Accuracy - Was the visualization clear, easy to understand, and appropriately formatted (labels, chart type, colours)? (1=Poor, 5=Excellent)", 1, 5, 3)
-                        visual_insightfulness = st.slider("Visual Insightfulness - Did the visualization help you gain useful insights or notice patterns in the data? (1=Low, 5=High)", 1, 5, 3)
-                        business_relevance = st.slider("Business Relevance - How relevant is the visualization to the business problem? (1=Low, 5=High)", 1, 5, 3)
-                        
-                        # New field: Iteration Count
-                        iteration_count = st.number_input(
-                            "Iteration Count - How many iterations did it take you to get the final outcome?",
-                            min_value=1,
-                            max_value=20,
-                            value=1,
-                            step=1,
-                            help="Enter the number of attempts or refinements needed"
-                        )
-                        
-                        # New field: Positive Outcomes (Multi-select)
-                        positive_outcomes_selected = st.multiselect(
-                            "Positive Outcomes - Select all that apply:",
-                            options=POSITIVE_OUTCOMES,
-                            help="Choose all positive aspects of this visualization"
-                        )
-                        
-                        # New field: Negative Outcomes (Multi-select)
-                        negative_outcomes_selected = st.multiselect(
-                            "Negative Outcomes - Select all that apply:",
-                            options=NEGATIVE_OUTCOMES,
-                            help="Choose all negative aspects or issues with this visualization"
-                        )
-                        
-                        comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
-                        
-                        col1, col2 = st.columns([1, 1])
+                    # Fallback to emoji if no logo found
+                    tab_labels.append(f"🤖 {model_name}")
+            
+            tabs = st.tabs(tab_labels)
+            
+            for i, (model_name, result) in enumerate(st.session_state['all_results'].items()):
+                with tabs[i]:
+                    # Get colors for this model
+                    bg_color = get_model_background_color(model_name)
+                    border_color = get_model_border_color(model_name)
+                    
+                    # Create a styled container with background color
+                    st.markdown(f"""
+                    <div style="
+                        background-color: {bg_color};
+                        border: 2px solid {border_color};
+                        border-radius: 10px;
+                        padding: 20px;
+                        margin: 10px 0;
+                    ">
+                    """, unsafe_allow_html=True)
+                    
+                    # Model header with logo - FIXED CONSISTENT SIZING
+                    # Map model names to their logo files
+                    logo_map = {
+                        'DeepSeek': 'deepseek.png',
+                        'OpenAI': 'openai.png', 
+                        'Claude': 'claude.png'
+                    }
+                    
+                    # Find matching logo
+                    logo_file = None
+                    for key, logo in logo_map.items():
+                        if key.lower() in model_name.lower():
+                            logo_file = logo
+                            break
+                    
+                    if logo_file:
+                        # Create header with logo - consistent sizing for different logos
+                        col1, col2 = st.columns([1, 4])
                         with col1:
-                            submitted = st.form_submit_button("✅ Submit Feedback", use_container_width=True)
+                            # Define consistent sizing for different logos
+                            logo_sizes = {
+                                'deepseek.png': 40,
+                                'openai.png': 100,  # Slightly smaller for OpenAI
+                                'claude.png': 100   # Medium size for Claude
+                            }
+                            logo_width = logo_sizes.get(logo_file, 100)  # Default to 60 if not specified
+                            st.image(f"public/{logo_file}", width=logo_width)
                         with col2:
-                            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+                            st.markdown(f"## {model_name}")
+                    else:
+                        # Fallback to emoji if no logo found
+                        st.markdown(f"## 🤖 {model_name}")
+                    
+                    st.info(f"**Model ID:** {result['model_id']}")
+                    
+                    if result['success']:
+                        # Display generated code
+                        st.subheader("📝 Generated Python Code:")
+                        st.code(result['code'], language="python")
                         
-                        if cancel:
-                            st.session_state['feedback_modal_open'] = False
-                            st.session_state['selected_model_for_feedback'] = ""
-                            st.rerun()
-                        
-                        if submitted:
-                            try:
-                                # Get the problem_id based on whether user wrote their own prompt
-                                selected_problem = st.session_state.get('selected_problem', '')
-                                use_custom_prompt = st.session_state.get('use_custom_prompt', False)
-                                
-                                if use_custom_prompt:
-                                    # If user wrote their own prompt, set problem_id to 0
-                                    problem_id = 0
-                                else:
-                                    # Use the selected business problem ID
-                                    problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
-                                
-                                # Convert multi-select lists to comma-separated strings
-                                positive_outcomes_str = ", ".join(positive_outcomes_selected) if positive_outcomes_selected else ""
-                                negative_outcomes_str = ", ".join(negative_outcomes_selected) if negative_outcomes_selected else ""
-                                
-                                # Save feedback to Supabase
-                                feedback_result = save_feedback_to_supabase(
-                                    model_name=selected_model,
-                                    prompt=result.get('prompt', st.session_state['current_prompt']),
-                                    problem_id=problem_id,
-                                    visual_accuracy=visual_accuracy,
-                                    visual_insightfulness=visual_insightfulness,
-                                    business_relevance=business_relevance,
-                                    iteration_count=iteration_count,
-                                    positive_outcomes=positive_outcomes_str,
-                                    negative_outcomes=negative_outcomes_str,
-                                    comment=comment,
-                                    code=result['code']
-                                )
-                                
-                                if feedback_result['success']:
-                                    # Update feedback count for this model
-                                    feedback_count_key = f"feedback_count_{selected_model}"
-                                    st.session_state[feedback_count_key] = st.session_state.get(feedback_count_key, 0) + 1
+                        # Execute and display visualization
+                        try:
+                            plt.figure()
+                            exec_code = result['code'].replace("plt.show()", "").replace("fig.show()", "")
+                            
+                            global_vars = {
+                                'plt': plt,
+                                'pd': pd,
+                                'df': df,
+                                'go': go
+                            }
+                            
+                            exec(exec_code, global_vars, global_vars)
+                            
+                            st.subheader("🎨 Generated Visualization:")
+                            if 'fig' in global_vars and isinstance(global_vars['fig'], go.Figure):
+                                st.plotly_chart(global_vars['fig'])
+                            else:
+                                st.pyplot(plt.gcf())
+                            
+                            plt.close('all')
+                            
+                        except Exception as e:
+                            st.error(f"Error executing code from {model_name}: {e}")
+                            plt.close('all')
+                    else:
+                        # Show error message if the model failed
+                        st.error(f"❌ {result['code']}")
+                        st.info("This model encountered an error. Please try again or check your API configuration.")
+                    
+                    # Always show feedback section regardless of success/error
+                    st.markdown("---")
+                    st.subheader("⭐ Rate This Visualization:")
+                    
+                    # Show feedback count for this model
+                    feedback_count_key = f"feedback_count_{model_name}"
+                    if feedback_count_key not in st.session_state:
+                        st.session_state[feedback_count_key] = 0
+                    
+                    if st.session_state[feedback_count_key] > 0:
+                        st.success(f"📊 You have submitted {st.session_state[feedback_count_key]} feedback entries for {model_name}")
+                    
+                    # Inline feedback form (no modal needed)
+                    with st.expander(f"📝 Submit Feedback for {model_name}", expanded=False):
+                        # Create the feedback form
+                        with st.form(f"feedback_form_{model_name}"):
+                            st.markdown(f"**Model:** {model_name}")
+                            st.markdown(f"**Prompt:** {result.get('prompt', st.session_state['current_prompt'])}")
+                            
+                            # Display problem information
+                            selected_problem = st.session_state.get('selected_problem', '')
+                            if selected_problem and selected_problem in business_problems:
+                                problem_details = business_problems[selected_problem]
+                                st.markdown(f"**Business Problem:** {selected_problem}")
+                                st.markdown(f"**Problem ID:** {problem_details['ProblemID']}")
+                                st.markdown(f"**Visualization Type:** {problem_details['Visualization Type']}")
+                                st.markdown(f"**Complexity:** {problem_details['Complexity']}")
+                            else:
+                                st.warning("⚠️ No business problem selected")
+                            
+                            visual_accuracy = st.slider("Visual Accuracy - Was the visualization clear, easy to understand, and appropriately formatted (labels, chart type, colours)? (1=Poor, 5=Excellent)", 1, 5, 3)
+                            visual_insightfulness = st.slider("Visual Insightfulness - Did the visualization help you gain useful insights or notice patterns in the data? (1=Low, 5=High)", 1, 5, 3)
+                            business_relevance = st.slider("Business Relevance - How relevant is the visualization to the business problem? (1=Low, 5=High)", 1, 5, 3)
+                            
+                            # New field: Iteration Count
+                            iteration_count = st.number_input(
+                                "Iteration Count - How many iterations did it take you to get the final outcome?",
+                                min_value=1,
+                                max_value=20,
+                                value=1,
+                                step=1,
+                                help="Enter the number of attempts or refinements needed"
+                            )
+                            
+                            # New field: Positive Outcomes (Multi-select)
+                            positive_outcomes_selected = st.multiselect(
+                                "Positive Outcomes - Select all that apply:",
+                                options=POSITIVE_OUTCOMES,
+                                help="Choose all positive aspects of this visualization"
+                            )
+                            
+                            # New field: Negative Outcomes (Multi-select)
+                            negative_outcomes_selected = st.multiselect(
+                                "Negative Outcomes - Select all that apply:",
+                                options=NEGATIVE_OUTCOMES,
+                                help="Choose all negative aspects or issues with this visualization"
+                            )
+                            
+                            comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
+                            
+                            submitted = st.form_submit_button("✅ Submit Feedback", use_container_width=True)
+                            
+                            if submitted:
+                                try:
+                                    # Get the problem_id based on whether user wrote their own prompt
+                                    selected_problem = st.session_state.get('selected_problem', '')
+                                    use_custom_prompt = st.session_state.get('use_custom_prompt', False)
                                     
-                                    # Close modal
-                                    st.session_state['feedback_modal_open'] = False
-                                    st.session_state['selected_model_for_feedback'] = ""
+                                    if use_custom_prompt:
+                                        # If user wrote their own prompt, set problem_id to 0
+                                        problem_id = 0
+                                    else:
+                                        # Use the selected business problem ID
+                                        problem_id = business_problems[selected_problem]['ProblemID'] if selected_problem in business_problems else 0
                                     
-                                    # Show success and refresh
-                                    st.success(f"✅ Feedback for {selected_model} submitted successfully!")
-                                    st.info("The page will refresh to show your updated feedback count.")
-                                    st.rerun()
+                                    # Convert multi-select lists to comma-separated strings
+                                    positive_outcomes_str = ", ".join(positive_outcomes_selected) if positive_outcomes_selected else ""
+                                    negative_outcomes_str = ", ".join(negative_outcomes_selected) if negative_outcomes_selected else ""
                                     
-                                else:
-                                    st.error(f"Error saving feedback: {feedback_result.get('error', 'Unknown error')}")
-                                
-                            except Exception as e:
-                                st.error(f"Error saving feedback: {e}")
-                                print(f"Supabase error: {e}")
-                
-                # Close the styled div for feedback form
-                st.markdown("</div>", unsafe_allow_html=True)
+                                    # Save feedback to Supabase
+                                    feedback_result = save_feedback_to_supabase(
+                                        model_name=model_name,
+                                        prompt=result.get('prompt', st.session_state['current_prompt']),
+                                        problem_id=problem_id,
+                                        visual_accuracy=visual_accuracy,
+                                        visual_insightfulness=visual_insightfulness,
+                                        business_relevance=business_relevance,
+                                        iteration_count=iteration_count,
+                                        positive_outcomes=positive_outcomes_str,
+                                        negative_outcomes=negative_outcomes_str,
+                                        comment=comment,
+                                        code=result['code']
+                                    )
+                                    
+                                    if feedback_result['success']:
+                                        # Update feedback count for this model
+                                        feedback_count_key = f"feedback_count_{model_name}"
+                                        st.session_state[feedback_count_key] = st.session_state.get(feedback_count_key, 0) + 1
+                                        
+                                        # Show success and refresh
+                                        st.success(f"✅ Feedback for {model_name} submitted successfully!")
+                                        st.info("The page will refresh to show your updated feedback count.")
+                                        st.rerun()
+                                        
+                                    else:
+                                        st.error(f"Error saving feedback: {feedback_result.get('error', 'Unknown error')}")
+                                    
+                                except Exception as e:
+                                    st.error(f"Error saving feedback: {e}")
+                                    print(f"Supabase error: {e}")
+                    
+                    # Close the styled div
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+
 
     else:
         st.error("Dataset could not be loaded. Please check the file path or format.")

@@ -5,7 +5,11 @@ import streamlit as st
 
 @st.cache_data(show_spinner=True)
 def load_default_dataset():
-    """Load the default dataset from the specified path."""
+    """Load the default dataset from the specified path.
+    
+    Returns:
+        pd.DataFrame or None: Loaded dataset or None if error
+    """
     default_path = r"C:\dataset.csv"
     if not os.path.exists(default_path):
         st.error(f"Default dataset not found at {default_path}")
@@ -18,7 +22,14 @@ def load_default_dataset():
 
 
 def is_code_safe(code: str) -> bool:
-    """Check if generated code contains unsafe patterns."""
+    """Check if generated code contains unsafe patterns.
+    
+    Args:
+        code (str): Code string to check for safety
+        
+    Returns:
+        bool: True if code is safe, False otherwise
+    """
     blacklist = [
         "os.", "sys.", "subprocess", "shutil", "open(", "eval(", "exec("
     ]
