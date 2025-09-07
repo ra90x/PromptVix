@@ -75,25 +75,24 @@ def get_model_border_color(model_name):
 
 
 # Define positive and negative outcome lists for evaluation
+# Refined Positive Outcomes (Mutually Exclusive Categories A-E)
 POSITIVE_OUTCOMES = [
-    "Correct and accurate",
-    "Reveals new patterns or trends",
-    "Useful for decision-making",
-    "Clear and easy to understand",
-    "Appropriate chart type",
-    "Efficient and reliable code"
+    "A: Technically sound execution (clean code, proper data handling, no errors)",
+    "B: Clear and effective visual design (appropriate chart type, readable formatting, proper visual hierarchy)",
+    "C: Meaningful insights generated (reveals patterns, trends, or relationships relevant to the problem)",
+    "D: Decision-ready output (suitable for business use, appropriate complexity level, actionable insights)",
+    "E: Efficient process (minimal iterations needed, quick to interpret, reliable output)"
 ]
 
+# Refined Negative Outcomes (Categories 1-7)
 NEGATIVE_OUTCOMES = [
-    "Hallucination (invented data, labels, or trends)",
-    "Oversimplification or surface-level insight",
-    "Misleading visual design (e.g., distorted scales)",
-    "Incorrect data aggregation or logic",
-    "Missing key variables or context",
-    "Missing key visual elements (e.g., labels, titles, legends)",
-    "Poor or inappropriate chart choice",
-    "Prompt sensitivity (output changes drastically on minor edits)",
-    "Code not executable or contains errors"
+    "1: Incorrect data processing (wrong calculations, aggregations, or data transformations)",
+    "2: Inappropriate visual encoding (wrong chart type, misleading scales, or incorrect visual mappings)",
+    "3: Incomplete visualization (missing essential labels, legends, titles, or contextual information)",
+    "4: Insufficient analytical depth (oversimplified analysis or missed key insights for the given problem)",
+    "5: Data fabrication (invented data points, labels, trends, or relationships not present in source data)",
+    "6: Code execution failure (non-functional, buggy, or technically flawed implementation)",
+    "7: Output inconsistency (drastically different results from minor prompt variations or repeated requests)"
 ]
 
 def handle_prompt_tab():
@@ -513,16 +512,16 @@ Requirements:
                             
                             # New field: Positive Outcomes (Multi-select)
                             positive_outcomes_selected = st.multiselect(
-                                "Positive Outcomes - Select all that apply:",
+                                "Positive Outcomes - Select all that apply (Categories A-E):",
                                 options=POSITIVE_OUTCOMES,
-                                help="Choose all positive aspects of this visualization"
+                                help="Choose all positive aspects of this visualization. Categories are mutually exclusive."
                             )
                             
                             # New field: Negative Outcomes (Multi-select)
                             negative_outcomes_selected = st.multiselect(
-                                "Negative Outcomes - Select all that apply:",
+                                "Negative Outcomes - Select all that apply (Categories 1-7):",
                                 options=NEGATIVE_OUTCOMES,
-                                help="Choose all negative aspects or issues with this visualization"
+                                help="Choose all negative aspects or issues with this visualization. Each category represents a different type of error."
                             )
                             
                             comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
