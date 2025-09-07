@@ -24,11 +24,20 @@ The application includes 18 pre-defined business scenarios with varying complexi
 Users can input their own natural language requests for visualizations, testing the models' ability to interpret and respond to novel prompts beyond the pre-defined scenarios.
 
 ### Comprehensive Feedback System
-The platform collects structured feedback on three key dimensions:
+The platform collects structured feedback using a refined classification system:
 
+**Rating Scales (1-5):**
 - Visual accuracy and clarity
-- Insightfulness of generated visualizations
+- Insightfulness of generated visualizations  
 - Business relevance and applicability
+
+**Structured Outcome Classification:**
+- **Positive Outcomes (A-E)**: Technical excellence, visual clarity, analytical value, practical utility, efficiency
+- **Negative Outcomes (1-7)**: Data processing errors, visual encoding errors, information completeness, analytical depth, fabrication, technical execution, consistency errors
+
+**Additional Metrics:**
+- Iteration count (1-20): Number of refinements needed
+- Qualitative comments: Detailed observations and suggestions
 
 Feedback data is stored in Supabase for subsequent analysis and research purposes.
 
@@ -102,11 +111,18 @@ with point size representing quantity and color representing category"
 
 ### 4. Feedback Collection
 For each model output, provide comprehensive feedback:
-- Visual Accuracy (1-5): Clarity, formatting, appropriate chart type
-- Visual Insightfulness (1-5): Value of insights gained
-- Business Relevance (1-5): Alignment with business objectives
-- Iteration Count: Number of refinements needed
-- Outcome Classification: Select positive/negative aspects
+
+**Rating Scales (1-5):**
+- Visual Accuracy: Clarity, formatting, appropriate chart type
+- Visual Insightfulness: Value of insights gained
+- Business Relevance: Alignment with business objectives
+
+**Structured Classification:**
+- **Positive Outcomes (A-E)**: Select strengths from technical excellence, visual clarity, analytical value, practical utility, efficiency
+- **Negative Outcomes (1-7)**: Select issues from data processing errors, visual encoding errors, information completeness, analytical depth, fabrication, technical execution, consistency errors
+
+**Additional Metrics:**
+- Iteration Count (1-20): Number of refinements needed
 - Comments: Detailed observations and suggestions
 
 ## Architecture
@@ -191,10 +207,13 @@ AVAILABLE_MODELS = {
 ## 📈 Feedback Analysis
 
 ### Data Collection
-- Structured Ratings: Numerical scores for key metrics
-- Qualitative Feedback: Detailed comments and observations
-- Outcome Classification: Systematic categorization of results
-- Session Tracking: Unique session IDs for analysis
+- **Structured Ratings**: Numerical scores for key metrics (1-5 scales)
+- **Qualitative Feedback**: Detailed comments and observations
+- **Refined Outcome Classification**: 
+  - Positive outcomes (A-E): Technical excellence, visual clarity, analytical value, practical utility, efficiency
+  - Negative outcomes (1-7): Data processing, visual encoding, information completeness, analytical depth, fabrication, technical execution, consistency errors
+- **Iteration Tracking**: Number of refinements needed (1-20 range)
+- **Session Tracking**: Unique session IDs for analysis
 
 ### Analysis Features
 - Real-time Dashboard: View all submitted feedback
