@@ -74,6 +74,102 @@ def get_model_border_color(model_name):
     return model_colors['Default']
 
 
+def get_model_logo_info(model_name):
+    """Get logo information with fallback handling.
+    
+    Args:
+        model_name (str): Name of the model
+        
+    Returns:
+        dict: Logo information including file path, size, and fallback
+    """
+    logo_map = {
+        'DeepSeek': {
+            'file': 'deepseek.png',
+            'size': 40,
+            'emoji': '🔵',
+            'alt': 'DeepSeek Logo'
+        },
+        'OpenAI': {
+            'file': 'openai.png', 
+            'size': 100,
+            'emoji': '🟢',
+            'alt': 'OpenAI Logo'
+        },
+        'Claude': {
+            'file': 'claude.png',
+            'size': 100,
+            'emoji': '🟣',
+            'alt': 'Claude Logo'
+        }
+    }
+    
+    # Find matching logo
+    for key, logo_info in logo_map.items():
+        if key.lower() in model_name.lower():
+            return logo_info
+    
+    # Default fallback
+    return {
+        'file': None,
+        'size': 60,
+        'emoji': '🤖',
+        'alt': 'AI Model'
+    }
+
+
+def check_logo_exists(logo_file):
+    """Check if logo file exists in the public directory.
+    
+    Args:
+        logo_file (str): Name of the logo file
+        
+    Returns:
+        bool: True if file exists, False otherwise
+    """
+    if not logo_file:
+        return False
+    return os.path.exists(f"public/{logo_file}")
+
+
+def render_model_logo(model_name, use_tab_format=False):
+    """Render model logo with lazy loading and fallback.
+    
+    Args:
+        model_name (str): Name of the model
+        use_tab_format (bool): Whether to use tab format (markdown) or image format
+        
+    Returns:
+        str: Rendered logo HTML or markdown
+    """
+    logo_info = get_model_logo_info(model_name)
+    
+    # Check if logo file actually exists
+    if logo_info['file'] and not check_logo_exists(logo_info['file']):
+        logo_info['file'] = None  # Force fallback if file doesn't exist
+    
+    if use_tab_format:
+        # For tab labels - use markdown with fallback
+        if logo_info['file']:
+            return f"![{logo_info['alt']}](public/{logo_info['file']}) {model_name}"
+        else:
+            return f"{logo_info['emoji']} {model_name}"
+    else:
+        # For header display - use HTML with lazy loading
+        if logo_info['file']:
+            return f"""
+            <img src="public/{logo_info['file']}" 
+                 alt="{logo_info['alt']}" 
+                 width="{logo_info['size']}" 
+                 loading="lazy"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+                 style="max-width: 100%; height: auto;">
+            <span style="display: none; font-size: {logo_info['size']}px;">{logo_info['emoji']}</span>
+            """
+        else:
+            return f'<span style="font-size: {logo_info["size"]}px;">{logo_info["emoji"]}</span>'
+
+
 # Define positive and negative outcome lists for evaluation
 # Refined Positive Outcomes (Mutually Exclusive Categories A-E)
 POSITIVE_OUTCOMES = [
@@ -352,30 +448,12 @@ Requirements:
             st.subheader("📊 Generated Visualizations")
             st.info(f"**Current Prompt:** {st.session_state['current_prompt']}")
             
-            # Create tabs for each model with logos
+            # Create tabs for each model with lazy-loaded logos
             model_names = list(st.session_state['all_results'].keys())
             tab_labels = []
             for model_name in model_names:
-                # Map model names to their logo files
-                logo_map = {
-                    'DeepSeek': 'deepseek.png',
-                    'OpenAI': 'openai.png', 
-                    'Claude': 'claude.png'
-                }
-                
-                # Find matching logo
-                logo_file = None
-                for key, logo in logo_map.items():
-                    if key.lower() in model_name.lower():
-                        logo_file = logo
-                        break
-                
-                if logo_file:
-                    # Create tab label with logo
-                    tab_labels.append(f"![{model_name}](public/{logo_file}) {model_name}")
-                else:
-                    # Fallback to emoji if no logo found
-                    tab_labels.append(f"🤖 {model_name}")
+                # Use the new lazy loading system
+                tab_labels.append(render_model_logo(model_name, use_tab_format=True))
             
             tabs = st.tabs(tab_labels)
             
@@ -396,38 +474,23 @@ Requirements:
                     ">
                     """, unsafe_allow_html=True)
                     
-                    # Model header with logo - FIXED CONSISTENT SIZING
-                    # Map model names to their logo files
-                    logo_map = {
-                        'DeepSeek': 'deepseek.png',
-                        'OpenAI': 'openai.png', 
-                        'Claude': 'claude.png'
-                    }
+                    # Model header with lazy-loaded logo
+                    logo_info = get_model_logo_info(model_name)
                     
-                    # Find matching logo
-                    logo_file = None
-                    for key, logo in logo_map.items():
-                        if key.lower() in model_name.lower():
-                            logo_file = logo
-                            break
-                    
-                    if logo_file:
-                        # Create header with logo - consistent sizing for different logos
+                    if logo_info['file']:
+                        # Create header with logo and fallback
                         col1, col2 = st.columns([1, 4])
                         with col1:
-                            # Define consistent sizing for different logos
-                            logo_sizes = {
-                                'deepseek.png': 40,
-                                'openai.png': 100,  # Slightly smaller for OpenAI
-                                'claude.png': 100   # Medium size for Claude
-                            }
-                            logo_width = logo_sizes.get(logo_file, 100)  # Default to 60 if not specified
-                            st.image(f"public/{logo_file}", width=logo_width)
+                            try:
+                                st.image(f"public/{logo_info['file']}", width=logo_info['size'])
+                            except Exception:
+                                # Fallback to emoji if image fails to load
+                                st.markdown(f'<div style="font-size: {logo_info["size"]}px; text-align: center;">{logo_info["emoji"]}</div>', unsafe_allow_html=True)
                         with col2:
                             st.markdown(f"## {model_name}")
                     else:
                         # Fallback to emoji if no logo found
-                        st.markdown(f"## 🤖 {model_name}")
+                        st.markdown(f"## {logo_info['emoji']} {model_name}")
                     
                     st.info(f"**Model ID:** {result['model_id']}")
                     
