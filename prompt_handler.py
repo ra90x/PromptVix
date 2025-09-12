@@ -448,14 +448,9 @@ Requirements:
             st.subheader("📊 Generated Visualizations")
             st.info(f"**Current Prompt:** {st.session_state['current_prompt']}")
             
-            # Create tabs for each model with lazy-loaded logos
+            # Create tabs for each model (names only, no logos)
             model_names = list(st.session_state['all_results'].keys())
-            tab_labels = []
-            for model_name in model_names:
-                # Use the new lazy loading system
-                tab_labels.append(render_model_logo(model_name, use_tab_format=True))
-            
-            tabs = st.tabs(tab_labels)
+            tabs = st.tabs(model_names)
             
             for i, (model_name, result) in enumerate(st.session_state['all_results'].items()):
                 with tabs[i]:
@@ -474,23 +469,8 @@ Requirements:
                     ">
                     """, unsafe_allow_html=True)
                     
-                    # Model header with lazy-loaded logo
-                    logo_info = get_model_logo_info(model_name)
-                    
-                    if logo_info['file']:
-                        # Create header with logo and fallback
-                        col1, col2 = st.columns([1, 4])
-                        with col1:
-                            try:
-                                st.image(f"public/{logo_info['file']}", width=logo_info['size'])
-                            except Exception:
-                                # Fallback to emoji if image fails to load
-                                st.markdown(f'<div style="font-size: {logo_info["size"]}px; text-align: center;">{logo_info["emoji"]}</div>', unsafe_allow_html=True)
-                        with col2:
-                            st.markdown(f"## {model_name}")
-                    else:
-                        # Fallback to emoji if no logo found
-                        st.markdown(f"## {logo_info['emoji']} {model_name}")
+                    # Model header (name only, no logo)
+                    st.markdown(f"## 🤖 {model_name}")
                     
                     st.info(f"**Model ID:** {result['model_id']}")
                     
