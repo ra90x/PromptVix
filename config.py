@@ -17,8 +17,8 @@ if not OPENROUTER_API_KEY:
 
 # Available LLM Models
 AVAILABLE_MODELS = {
-    "DeepSeek v3.1": "deepseek/deepseek-chat-v3.1",
-    "OpenAI GPT-4o": "openai/chatgpt-4o-latest",
+    "xAI Grok Code Fast": "x-ai/grok-code-fast-1",
+    "OpenAI GPT-4.1 Mini": "openai/gpt-4.1-mini",
     "Claude 3.7 Sonnet": "anthropic/claude-3.7-sonnet"
 }
 

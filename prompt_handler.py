@@ -13,7 +13,8 @@ from config import (
     DEFAULT_DATASET_PATH,
     MAX_TOKENS,
     OPENROUTER_API_KEY,
-    TEMPERATURE
+    TEMPERATURE,
+    OPENROUTER_BASE_URL,
 )
 from prompt_scenarios import business_problems
 from supabase_feedback import get_feedback_count, save_feedback_to_supabase
@@ -31,7 +32,7 @@ def get_model_background_color(model_name):
         str: CSS rgba color string for the model
     """
     model_colors = {
-        'DeepSeek': 'rgba(59, 130, 246, 0.1)',  # Subtle blue
+        'Grok': 'rgba(59, 130, 246, 0.1)',  # Subtle blue
         'OpenAI': 'rgba(16, 185, 129, 0.1)',    # Subtle green
         'Claude': 'rgba(139, 92, 246, 0.1)',    # Subtle purple
         'Gemini': 'rgba(249, 115, 22, 0.1)',    # Subtle orange
@@ -57,7 +58,7 @@ def get_model_border_color(model_name):
         str: CSS rgba color string for the model border
     """
     model_colors = {
-        'DeepSeek': 'rgba(59, 130, 246, 0.3)',  # Blue border
+        'Grok': 'rgba(59, 130, 246, 0.3)',  # Blue border
         'OpenAI': 'rgba(16, 185, 129, 0.3)',    # Green border
         'Claude': 'rgba(139, 92, 246, 0.3)',    # Purple border
         'Gemini': 'rgba(249, 115, 22, 0.3)',    # Orange border
@@ -84,11 +85,11 @@ def get_model_logo_info(model_name):
         dict: Logo information including file path, size, and fallback
     """
     logo_map = {
-        'DeepSeek': {
-            'file': 'deepseek.png',
+        'Grok': {
+            'file': None,
             'size': 40,
-            'emoji': '🔵',
-            'alt': 'DeepSeek Logo'
+            'emoji': '⚡',
+            'alt': 'Grok Logo'
         },
         'OpenAI': {
             'file': 'openai.png', 
@@ -116,6 +117,9 @@ def get_model_logo_info(model_name):
         'emoji': '🤖',
         'alt': 'AI Model'
     }
+
+
+## No legacy model vendor handling required
 
 
 def check_logo_exists(logo_file):
@@ -302,7 +306,7 @@ def handle_prompt_tab():
             user_request = st.text_area(
                 "🚀 Enter your custom prompt:",
                 key='user_request',
-                height=100
+                height=220
             )
             prompt_to_use = user_request
         else:
@@ -359,8 +363,11 @@ Requirements:
                         try:
                             st.write(f"🔄 Generating with {model_name}...")
                             
+                            # Resolve model id
+                            selected_model_id = model_id
+
                             # OpenRouter API call
-                            url = "https://openrouter.ai/api/v1/chat/completions"
+                            url = f"{OPENROUTER_BASE_URL}/chat/completions"
                             headers = {
                                 "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                                 "Content-Type": "application/json",
@@ -368,7 +375,7 @@ Requirements:
                                 "X-Title": "PromptVix"
                             }
                             payload = {
-                                "model": model_id,
+                                "model": selected_model_id,
                                 "messages": [
                                     {
                                         "role": "system", 
@@ -421,16 +428,18 @@ Requirements:
                                         'prompt': prompt_to_use
                                     }
                             else:
+                                # Include brief response body for debugging
+                                body_snippet = response.text[:300] if response.text else ""
                                 all_results[model_name] = {
-                                    'code': f"API Error: {response.status_code}",
-                                    'model_id': model_id,
+                                    'code': f"API Error: {response.status_code} - {body_snippet}",
+                                    'model_id': selected_model_id,
                                     'success': False,
                                     'prompt': prompt_to_use
                                 }
                         except Exception as e:
                             all_results[model_name] = {
                                 'code': f"Exception: {str(e)}",
-                                'model_id': model_id,
+                                'model_id': selected_model_id if 'selected_model_id' in locals() else model_id,
                                 'success': False,
                                 'prompt': prompt_to_use
                             }
@@ -567,8 +576,6 @@ Requirements:
                                 help="Choose all negative aspects or issues with this visualization. Each category represents a different type of error."
                             )
                             
-                            comment = st.text_area("Comment (optional - Suggestions or observations about what worked well or what could be improved.)", height=100)
-                            
                             submitted = st.form_submit_button("✅ Submit Feedback", use_container_width=True)
                             
                             if submitted:
@@ -599,7 +606,6 @@ Requirements:
                                         iteration_count=iteration_count,
                                         positive_outcomes=positive_outcomes_str,
                                         negative_outcomes=negative_outcomes_str,
-                                        comment=comment,
                                         code=result['code']
                                     )
                                     

@@ -10,8 +10,8 @@ SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_SERVICE_KEY=your_supabase_service_key_here
 
 # Note: The app now generates visualizations from all available models simultaneously:
-# - DeepSeek v3.1
-# - OpenAI GPT-4o  
+# - xAI Grok Code Fast
+# - OpenAI GPT-4.1 Mini  
 # - Claude 3.7 Sonnet
 # No need to specify individual models - they're all used automatically!
 

@@ -6,7 +6,7 @@ PromptVix is a Streamlit-based application that compares how different Large Lan
 
 ## Overview
 
-This research tool investigates the capabilities of contemporary LLMs in generating meaningful business visualizations. The application supports three leading models: DeepSeek v3.1, OpenAI GPT-4o, and Claude 3.7 Sonnet, enabling direct comparison of their visualization generation approaches.
+This research tool investigates the capabilities of contemporary LLMs in generating meaningful business visualizations. The application supports three leading models: xAI Grok Code Fast, OpenAI GPT-4.1 Mini, and Claude 3.7 Sonnet, enabling direct comparison of their visualization generation approaches.
 
 ## Key Features
 
@@ -139,7 +139,6 @@ PromptVix/
 ├── prompt_scenarios.py    # Business problem definitions
 ├── utils.py               # Utility functions
 ├── public/                # Model logos
-│   ├── deepseek.png
 │   ├── openai.png
 │   └── claude.png
 └── Superstore_Dataset.csv # Sample dataset
@@ -198,8 +197,8 @@ TEMPERATURE=0.2
 Models are configured in `config.py`:
 //python
 AVAILABLE_MODELS = {
-    "DeepSeek v3.1": "deepseek/deepseek-chat-v3.1",
-    "OpenAI GPT-4o": "openai/chatgpt-4o-latest",
+    "xAI Grok Code Fast": "x-ai/grok-code-fast-1",
+    "OpenAI GPT-4.1 Mini": "openai/gpt-4.1-mini",
     "Claude 3.7 Sonnet": "anthropic/claude-3.7-sonnet"
 }
 ```
