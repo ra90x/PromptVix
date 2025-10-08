@@ -175,24 +175,22 @@ def render_model_logo(model_name, use_tab_format=False):
 
 
 # Define positive and negative outcome lists for evaluation
-# Refined Positive Outcomes (Mutually Exclusive Categories A-E)
+# Positive Outcomes (Multi-Select)
 POSITIVE_OUTCOMES = [
-    "A: Technically sound execution (clean code, proper data handling, no errors)",
-    "B: Clear and effective visual design (appropriate chart type, readable formatting, proper visual hierarchy)",
-    "C: Meaningful insights generated (reveals patterns, trends, or relationships relevant to the problem)",
-    "D: Decision-ready output (suitable for business use, appropriate complexity level, actionable insights)",
-    "E: Efficient process (minimal iterations needed, quick to interpret, reliable output)"
+    "A: Novel perspective (visualisation revealed something unexpected or innovative)",
+    "B: Strong explanatory value (helped clarify complex data or relationships)",
+    "C: High interpretability (easy to explain to a non-technical audience)",
+    "D: Confidence-building (visual output felt trustworthy and reliable)",
+    "E: Consistency (similar prompts produced stable, reproducible results)"
 ]
 
-# Refined Negative Outcomes (Categories 1-7)
+# Negative Outcomes (Multi-Select)
 NEGATIVE_OUTCOMES = [
-    "1: Incorrect data processing (wrong calculations, aggregations, or data transformations)",
-    "2: Inappropriate visual encoding (wrong chart type, misleading scales, or incorrect visual mappings)",
-    "3: Incomplete visualization (missing essential labels, legends, titles, or contextual information)",
-    "4: Insufficient analytical depth (oversimplified analysis or missed key insights for the given problem)",
-    "5: Data fabrication (invented data points, labels, trends, or relationships not present in source data)",
-    "6: Code execution failure (non-functional, buggy, or technically flawed implementation)",
-    "7: Output inconsistency (drastically different results from minor prompt variations or repeated requests)"
+    "1: Misleading representation (visualisation distorted or overstated findings)",
+    "2: Missing context (visual lacked sufficient labels, annotations, or narrative)",
+    "3: Code Execution Failures (Syntax, API, Library, or Logic errors)",
+    "4: Hallucinated elements (visual introduced patterns, trends, or values from itself)",
+    "5: Unstable output (similar prompts produced inconsistent or contradictory visuals)"
 ]
 
 def handle_prompt_tab():
@@ -274,6 +272,17 @@ def handle_prompt_tab():
             st.info(f"📊 Using provided dataset: **{DEFAULT_DATASET_PATH}**")
         st.subheader("Data Preview:")
         st.dataframe(df.head(10))
+        
+        # Download button for the dataset
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        dataset_name = uploaded_file.name if uploaded_file else DEFAULT_DATASET_PATH
+        st.download_button(
+            label="📥 Download Dataset",
+            data=csv_data,
+            file_name=dataset_name,
+            mime="text/csv",
+            help="Download the exact dataset being used for analysis"
+        )
 
         # --- Business Problem Dropdown and Custom Prompt Toggle ---
         st.subheader("Select a Business Problem or Write Your Own Prompt:")
